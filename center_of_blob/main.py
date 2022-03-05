@@ -8,27 +8,18 @@ from PIL import Image
 import numpy as np
 import pandas as pd
 import analyze
+from main_image import ScrollLabel
 
 
-class QLabelDemo(QWidget) :
+class QLabelDemo(QWidget):
     def __init__(self):
         self.state = 'none'
         self.origin: tuple[float, float] | None = None
-        self.filename = "first.jpg"
+        self.filename = "second.tif"
         self.image = Image.open(self.filename)
         self.arr = np.asarray(self.image)
         self.centers = []
         self.button_states = {}
-
-        # # Reshape to 2d for pandas
-        # names = ['x', 'y', 'z']
-        # index = pd.MultiIndex.from_product([range(s) for s in self.arr.shape], names=names)
-        # self.df = pd.DataFrame({'a': self.arr.flatten()}, index=index)['a'].unstack('z')
-        # self.df.columns.name = None
-        # self.df.columns = list('rgb')
-        # self.df = self.df.swaplevel(0, 1)
-        # print(self.df.loc[0, 0])
-        # print(self.df.loc[1, 0])
 
         print('Format:', self.image.format)
         print('Size:', self.image.size)
@@ -36,17 +27,10 @@ class QLabelDemo(QWidget) :
 
         super().__init__()
         self.initUI()
+        self.setGeometry(100, 100, 500, 400)
 
     def initUI(self):
-        label = QLabel(self)
-        self.label = label
-        label.setAlignment(Qt.AlignCenter)
-        label.setToolTip(self.filename)
-        self._pixmap = QPixmap(self.filename)
-        self._pixmap = self._pixmap.scaledToHeight(800)
-        label.setPixmap(self._pixmap)
-        label.setScaledContents(True)
-        label.setStyleSheet("border: 3px solid blue; padding: 0px; margin: 0px")
+        self.label = ScrollLabel(self.filename)
 
         self.set_origin = QPushButton('Start setting origin', self)
         self.set_origin.setToolTip('Click this button and then click on the desired origin')
@@ -69,6 +53,14 @@ class QLabelDemo(QWidget) :
         self.add_centers.clicked.connect(self.activate_add_centers)
         self.button_states['adding_centers'] = self.add_centers
 
+        self.zoom_in = QPushButton('Zoom in', self)
+        self.zoom_in.resize(150, 50)
+        self.zoom_in.clicked.connect(lambda: self.label.zoom('in'))
+
+        self.zoom_out = QPushButton('Zoom out', self)
+        self.zoom_out.resize(150, 50)
+        self.zoom_out.clicked.connect(lambda: self.label.zoom('out'))
+
         write_csv = QPushButton('Write CSV', self)
         write_csv.resize(150, 50)
         write_csv.clicked.connect(self.write_csv)
@@ -79,12 +71,14 @@ class QLabelDemo(QWidget) :
         layout.addWidget(self.remove_centers, 1, 0)
         layout.addWidget(self.add_centers, 1, 1)
         layout.addWidget(write_csv, 2, 0)
-        layout.addWidget(label, 3, 0, 1, 2)
+        layout.addWidget(self.zoom_in, 3, 0)
+        layout.addWidget(self.zoom_out, 3, 1)
+        layout.addWidget(self.label, 4, 0, 1, 2)
         self.setLayout(layout)
 
         self.setWindowTitle('QLabel Example')
         # self.installEventFilter(self)
-        self.label.installEventFilter(self)
+        self.label.label.installEventFilter(self)
         # self.label.setMouseTracking(True)
 
     def linkHovered(self):
@@ -178,14 +172,12 @@ class QLabelDemo(QWidget) :
         return x, y
 
     def mouse_to_pixel(self, x, y):
-        rect = self.label.rect()
-        label_w, label_h = rect.width(), rect.height()
-        x_pct = x / label_w
-        y_pct = y / label_h
-
-        result_y = int(x_pct * self.image.width)
-        result_x = int(y_pct * self.image.height)
-
+        # Prefer numpy C-style coordinates: x=row, y=column
+        x, y = y, x
+        x_pct = x / self.label.label.width()
+        y_pct = y / self.label.label.height()
+        result_x = int(x_pct * self.image.width)
+        result_y = int(y_pct * self.image.height)
         return result_x, result_y
 
     def locate_blobs(self):
@@ -201,10 +193,9 @@ class QLabelDemo(QWidget) :
         bytes_per_line = 3 * width
         new_image = QtGui.QImage(new_data, width, height, bytes_per_line, QtGui.QImage.Format_RGB888)
         new_pixmap = QtGui.QPixmap.fromImage(new_image)
-        new_pixmap = new_pixmap.scaledToHeight(800)
 
         # set pixmap onto the label widget
-        self.label.setPixmap(new_pixmap)
+        self.label._update_image(new_pixmap)
         self.label.show()
 
     def write_csv(self):
@@ -220,6 +211,7 @@ class QLabelDemo(QWidget) :
             distance = np.sqrt((x - x0) * (x - x0) + (y - y0) * (y - y0))
             data.append([k, x, y, distance])
         pd.DataFrame(data, columns=['point', 'x', 'y', 'distance']).to_csv('../output.csv', index=False)
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
