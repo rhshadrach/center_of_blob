@@ -74,15 +74,15 @@ def identify_centers(data, sigma: float = 1.0) -> list[tuple[float, float]]:
 
 def highlight_points(data, centers):
     result = data.copy()
-    for center in centers:
-        highlight_point(result, center)
+    for center, color in centers.items():
+        highlight_point(result, center, color)
     return result
 
 
 def highlight_point(data, point, color=(255, 255, 255)):
     xx, yy = point
-    for k in range(2):
-        for l in range(2):
+    for k in range(4):
+        for l in range(4):
             data[xx + k, yy + l] = color
             data[xx + k, yy - l] = color
             data[xx - k, yy + l] = color
