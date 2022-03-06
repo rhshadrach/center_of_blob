@@ -1,52 +1,34 @@
 import sys
-from PyQt5.QtWidgets import QApplication,QLabel,QWidget, QPushButton, QGridLayout
-from PyQt5.QtGui import QPixmap
-from PyQt5 import QtGui
-from PyQt5.QtCore import Qt
+import os
+import functools as ft
+from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QGridLayout, QCheckBox, QFileDialog, QSlider
+
 from PyQt5 import QtCore
-from PIL import Image
+
 import numpy as np
 import pandas as pd
-import analyze
+from center_of_blob import analyze
+from center_of_blob.main_image import ScrollLabel
+from center_of_blob.channels import Channels, N_CHANNELS
+from center_of_blob.centers import Centers
 
 
-class QLabelDemo(QWidget) :
+class QLabelDemo(QWidget):
     def __init__(self):
+        super().__init__()
         self.state = 'none'
         self.origin: tuple[float, float] | None = None
-        self.filename = "first.jpg"
-        self.image = Image.open(self.filename)
-        self.arr = np.asarray(self.image)
-        self.centers = []
+        self.channels = None
+        self.filename = None
+
+        self.centers = Centers()
         self.button_states = {}
 
-        # # Reshape to 2d for pandas
-        # names = ['x', 'y', 'z']
-        # index = pd.MultiIndex.from_product([range(s) for s in self.arr.shape], names=names)
-        # self.df = pd.DataFrame({'a': self.arr.flatten()}, index=index)['a'].unstack('z')
-        # self.df.columns.name = None
-        # self.df.columns = list('rgb')
-        # self.df = self.df.swaplevel(0, 1)
-        # print(self.df.loc[0, 0])
-        # print(self.df.loc[1, 0])
+        self.img_path_button = QPushButton("Select Image File")
+        self.img_path_button.clicked.connect(self.get_img_file)
 
-        print('Format:', self.image.format)
-        print('Size:', self.image.size)
-        print('Mode:', self.image.mode)
-
-        super().__init__()
-        self.initUI()
-
-    def initUI(self):
-        label = QLabel(self)
-        self.label = label
-        label.setAlignment(Qt.AlignCenter)
-        label.setToolTip(self.filename)
-        self._pixmap = QPixmap(self.filename)
-        self._pixmap = self._pixmap.scaledToHeight(800)
-        label.setPixmap(self._pixmap)
-        label.setScaledContents(True)
-        label.setStyleSheet("border: 3px solid blue; padding: 0px; margin: 0px")
+        self.centers_path_button = QPushButton("Select Centers File")
+        self.centers_path_button.clicked.connect(self.get_centers_file)
 
         self.set_origin = QPushButton('Start setting origin', self)
         self.set_origin.setToolTip('Click this button and then click on the desired origin')
@@ -59,39 +41,97 @@ class QLabelDemo(QWidget) :
         locate_blobs.resize(150, 50)
         locate_blobs.clicked.connect(self.locate_blobs)
 
-        self.remove_centers = QPushButton('Start removing centers', self)
-        self.remove_centers.resize(150, 50)
-        self.remove_centers.clicked.connect(self.activate_remove_centers)
-        self.button_states['removing_centers'] = self.remove_centers
+        self.modify_centers = QPushButton('Start modifying centers', self)
+        self.modify_centers.resize(150, 50)
+        self.modify_centers.clicked.connect(self.activate_modify_centers)
+        self.button_states['modifying_centers'] = self.modify_centers
 
-        self.add_centers = QPushButton('Start adding centers', self)
-        self.add_centers.resize(150, 50)
-        self.add_centers.clicked.connect(self.activate_add_centers)
-        self.button_states['adding_centers'] = self.add_centers
+        self.zoom_in = QPushButton('Zoom in', self)
+        self.zoom_in.resize(150, 50)
+        self.zoom_in.clicked.connect(lambda: self.label.zoom('in'))
+
+        self.zoom_out = QPushButton('Zoom out', self)
+        self.zoom_out.resize(150, 50)
+        self.zoom_out.clicked.connect(lambda: self.label.zoom('out'))
 
         write_csv = QPushButton('Write CSV', self)
         write_csv.resize(150, 50)
         write_csv.clicked.connect(self.write_csv)
 
+        self.show_channels = []
+        for k in range(N_CHANNELS):
+            check_box = QCheckBox(f'Channel {k}')
+            check_box.setChecked(k == 0)
+            check_box.stateChanged.connect(lambda: self.label.update_image())
+            self.show_channels.append(check_box)
+
+        self.brightness_mul = []
+        for k in range(N_CHANNELS):
+            slider = QSlider(QtCore.Qt.Horizontal)
+            slider.setMinimum(0)
+            slider.setMaximum(5000)
+            slider.setValue(1000)
+            updater = ft.partial(self.update_brightness_mul, k)
+            slider.valueChanged.connect(updater)
+            self.brightness_mul.append(slider)
+
+        self.label = ScrollLabel(self)
+
         layout = QGridLayout()
-        layout.addWidget(self.set_origin, 0, 0)
-        layout.addWidget(locate_blobs, 0, 1)
-        layout.addWidget(self.remove_centers, 1, 0)
-        layout.addWidget(self.add_centers, 1, 1)
-        layout.addWidget(write_csv, 2, 0)
-        layout.addWidget(label, 3, 0, 1, 2)
+        layout.addWidget(self.img_path_button, 0, 0)
+        layout.addWidget(self.centers_path_button, 0, 1)
+        layout.addWidget(write_csv, 0, 2)
+        layout.addWidget(self.set_origin, 1, 0)
+        layout.addWidget(self.modify_centers, 1, 1)
+        layout.addWidget(locate_blobs, 1, 2)
+        layout.addWidget(self.zoom_in, 2, 0)
+        layout.addWidget(self.zoom_out, 2, 1)
+        for k in range(N_CHANNELS):
+            layout.addWidget(self.show_channels[k], k, 3)
+            layout.addWidget(self.brightness_mul[k], k, 4)
+        layout.addWidget(self.label, 4, 0, 1, 5)
         self.setLayout(layout)
 
         self.setWindowTitle('QLabel Example')
-        # self.installEventFilter(self)
-        self.label.installEventFilter(self)
-        # self.label.setMouseTracking(True)
+        self.label.label.installEventFilter(self)
 
-    def linkHovered(self):
-        print('Link hovered')
+        self.setGeometry(100, 100, 500, 400)
 
-    def linkClicked(self):
-        print('Link clicked')
+    def update_brightness_mul(self, channel):
+        value = self.brightness_mul[channel].value() / 1000
+        self.channels.set_brightness_mul(channel, value)
+        self.label.update_image()
+
+    def get_img_file(self):
+        mypath = os.path.dirname(os.path.realpath(__file__))
+        path = QFileDialog.getOpenFileName(
+            self,
+            'Open Image File',
+            mypath,
+        )[0]
+        self.filename = path
+        self.channels = Channels(path)
+        self.centers.clear()
+        self.label.reset_image()
+
+    def get_centers_file(self):
+        # TODO: Make sure centers is empty?
+        mypath = os.path.dirname(os.path.realpath(__file__))
+        path = QFileDialog.getOpenFileName(
+            self,
+            'Open Centers File',
+            mypath,
+        )[0]
+        data = pd.read_csv(path).set_index(['x', 'y'])
+        self.origin = data[data["distance"].lt(1e-5)].index[0]
+        self.centers = Centers(
+            data
+            .query("distance > 0")
+            .drop(columns='distance')
+            .apply(tuple, axis=1)
+            .to_dict()
+        )
+        self.label.update_image()
 
     def activate_set_origin(self):
         if self.state == 'setting_origin':
@@ -100,18 +140,11 @@ class QLabelDemo(QWidget) :
             self.state = 'setting_origin'
         self.update_state_buttons()
 
-    def activate_add_centers(self):
-        if self.state == 'adding_centers':
+    def activate_modify_centers(self):
+        if self.state == 'modifying_centers':
             self.state = 'none'
         else:
-            self.state = 'adding_centers'
-        self.update_state_buttons()
-
-    def activate_remove_centers(self):
-        if self.state == 'removing_centers':
-            self.state = 'none'
-        else:
-            self.state = 'removing_centers'
+            self.state = 'modifying_centers'
         self.update_state_buttons()
 
     def update_state_buttons(self):
@@ -124,49 +157,31 @@ class QLabelDemo(QWidget) :
 
     def add_center(self, source, event):
         x, y = self.mouse_to_pixel(event.pos().x(), event.pos().y())
-        self.centers.append((x, y))
-        self.update_pixmap()
+        closest = self.centers.closest((x, y), radius=10)
+        if closest is None:
+            self.centers[x, y] = self.channels.color(self.visible_channels())
+            self.label.update_image()
 
     def remove_center(self, source, event):
         x, y = self.mouse_to_pixel(event.pos().x(), event.pos().y())
-        closest, shortest_distance = None, None
-        for idx, (x2, y2) in enumerate(self.centers):
-            distance = (x - x2) * (x - x2) + (y - y2) * (y - y2)
-            if closest is None or distance < shortest_distance:
-                closest = idx
-                shortest_distance = distance
-        if shortest_distance is None or shortest_distance > 900:
-            print(shortest_distance)
-            return
-        del self.centers[closest]
-        self.update_pixmap()
+        closest = self.centers.closest((x, y), radius=30)
+        if closest is not None:
+            del self.centers[closest]
+            self.label.update_image()
 
     def eventFilter(self, source, event):
-        if event.type() == QtCore.QEvent.MouseButtonPress and event.button() == QtCore.Qt.LeftButton:
-            if self.state == 'setting_origin':
+        if event.type() == QtCore.QEvent.MouseButtonPress:
+            if self.state == 'setting_origin' and event.button() == QtCore.Qt.LeftButton:
                 x, y = self.mouse_to_pixel(event.pos().x(), event.pos().y())
                 self.origin = (x, y)
                 self.state = 'none'
                 self.update_state_buttons()
-                self.update_pixmap()
-            elif self.state == 'removing_centers':
-                self.remove_center(source, event)
-            elif self.state == 'adding_centers':
-                self.add_center(source, event)
-
-        # if event.type() == QtCore.QEvent.MouseMove:
-        #     x, y = event.pos().x(), event.pos().y()
-        #     rect = self.label.rect()
-        #     label_w, label_h = rect.width(), rect.height()
-        #     x_pct = x / label_w
-        #     y_pct = y / label_h
-        #     x = int(x_pct * self.image.size[0])
-        #     y = int(y_pct * self.image.size[1])
-        #     try:
-        #         color = self.df.loc[x, y].tolist()
-        #     except KeyError:
-        #         color = 'Out of bounds'
-        #     print((x, y), color)
+                self.label.update_image()
+            elif self.state == 'modifying_centers':
+                if event.button() == QtCore.Qt.LeftButton:
+                    self.add_center(source, event)
+                elif event.button() == QtCore.Qt.RightButton:
+                    self.remove_center(source, event)
 
         return super().eventFilter(source, event)
 
@@ -178,34 +193,26 @@ class QLabelDemo(QWidget) :
         return x, y
 
     def mouse_to_pixel(self, x, y):
-        rect = self.label.rect()
-        label_w, label_h = rect.width(), rect.height()
-        x_pct = x / label_w
-        y_pct = y / label_h
-
-        result_y = int(x_pct * self.image.width)
-        result_x = int(y_pct * self.image.height)
-
+        # Prefer numpy C-style coordinates: x=row, y=column
+        x, y = y, x
+        x_pct = x / self.label.label.width()
+        y_pct = y / self.label.label.height()
+        result_x = int(x_pct * self.channels.width)
+        result_y = int(y_pct * self.channels.height)
         return result_x, result_y
 
     def locate_blobs(self):
-        self.centers = analyze.identify_centers(self.arr)
-        self.update_pixmap()
+        self.centers = analyze.identify_centers(self.channels.base.arr)
+        self.label.update_image()
 
-    def update_pixmap(self):
-        new_data = analyze.highlight_points(self.arr, self.centers)
-        if self.origin is not None:
-            analyze.highlight_point(new_data, self.origin, color=(255, 255, 0))
-
-        height, width, channel = new_data.shape
-        bytes_per_line = 3 * width
-        new_image = QtGui.QImage(new_data, width, height, bytes_per_line, QtGui.QImage.Format_RGB888)
-        new_pixmap = QtGui.QPixmap.fromImage(new_image)
-        new_pixmap = new_pixmap.scaledToHeight(800)
-
-        # set pixmap onto the label widget
-        self.label.setPixmap(new_pixmap)
-        self.label.show()
+    # TODO: Overload
+    def visible_channels(self, dtype=int) -> list[int | str]:
+        visible_channels = [k for k, checkbox in enumerate(self.show_channels) if checkbox.isChecked()]
+        if dtype is int:
+            return visible_channels
+        else:
+            mapper = self.channels.mapper
+            return {k: mapper[v] for k, v in visible_channels.items()}
 
     def write_csv(self):
         if self.origin is None:
@@ -215,11 +222,18 @@ class QLabelDemo(QWidget) :
 
         x0, y0 = self.origin
         data = []
-        data.append([0, x0, y0, 0])
-        for k, (x, y) in enumerate(self.centers, 1):
+        data.append([x0, y0, 0, 0, 0, 0])
+        for (x, y), color in self.centers.items():
             distance = np.sqrt((x - x0) * (x - x0) + (y - y0) * (y - y0))
-            data.append([k, x, y, distance])
-        pd.DataFrame(data, columns=['point', 'x', 'y', 'distance']).to_csv('../output.csv', index=False)
+            data.append([x, y, distance, *color])
+        suggested_filename = f"{os.path.splitext(self.filename)[0]}.csv"
+        name = QFileDialog.getSaveFileName(self, 'Save File', suggested_filename)[0]
+
+        pd.DataFrame(
+            data,
+            columns=['x', 'y', 'distance', 'red', 'green', 'blue']
+        ).to_csv(name, index=False)
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
