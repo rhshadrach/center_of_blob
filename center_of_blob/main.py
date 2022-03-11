@@ -1,7 +1,8 @@
 import sys
 import os
 import functools as ft
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QGridLayout, QCheckBox, QFileDialog, QSlider
+from typing import Literal
+from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QGridLayout, QCheckBox, QFileDialog, QSlider, QMessageBox
 
 from PyQt5 import QtCore
 
@@ -11,6 +12,17 @@ from center_of_blob import analyze
 from center_of_blob.main_image import ScrollLabel
 from center_of_blob.channels import Channels, N_CHANNELS
 from center_of_blob.centers import Centers
+from center_of_blob.popups import error_msg
+
+
+# TODO: Why do we have to use lambda with the .connect calls below when using this?
+def require_image(func):
+    def wrapper(self, *args, **kwargs):
+        if not self.has_img:
+            error_msg("Must load image first.")
+            return
+        return func(self, *args, **kwargs)
+    return wrapper
 
 
 class QLabelDemo(QWidget):
@@ -20,43 +32,43 @@ class QLabelDemo(QWidget):
         self.origin: tuple[float, float] | None = None
         self.channels = None
         self.filename = None
-
         self.centers = Centers()
         self.button_states = {}
+        self.has_img = False
 
         self.img_path_button = QPushButton("Select Image File")
         self.img_path_button.clicked.connect(self.get_img_file)
 
         self.centers_path_button = QPushButton("Select Centers File")
-        self.centers_path_button.clicked.connect(self.get_centers_file)
+        self.centers_path_button.clicked.connect(lambda: self.get_centers_file())
 
-        self.set_origin = QPushButton('Start setting origin', self)
-        self.set_origin.setToolTip('Click this button and then click on the desired origin')
-        self.set_origin.resize(150, 50)
-        self.set_origin.clicked.connect(self.activate_set_origin)
-        self.button_states['setting_origin'] = self.set_origin
+        self.set_origin_button = QPushButton('Start setting origin', self)
+        self.set_origin_button.setToolTip('Click this button and then click on the desired origin')
+        self.set_origin_button.resize(150, 50)
+        self.set_origin_button.clicked.connect(lambda: self.activate_set_origin())
+        self.button_states['setting_origin'] = self.set_origin_button
 
         locate_blobs = QPushButton('Locate blobs', self)
         locate_blobs.setToolTip('Click this button to locate blobs')
         locate_blobs.resize(150, 50)
-        locate_blobs.clicked.connect(self.locate_blobs)
+        locate_blobs.clicked.connect(lambda: self.locate_blobs())
 
         self.modify_centers = QPushButton('Start modifying centers', self)
         self.modify_centers.resize(150, 50)
-        self.modify_centers.clicked.connect(self.activate_modify_centers)
+        self.modify_centers.clicked.connect(lambda: self.activate_modify_centers())
         self.button_states['modifying_centers'] = self.modify_centers
 
         self.zoom_in = QPushButton('Zoom in', self)
         self.zoom_in.resize(150, 50)
-        self.zoom_in.clicked.connect(lambda: self.label.zoom('in'))
+        self.zoom_in.clicked.connect(lambda: self.zoom('in'))
 
         self.zoom_out = QPushButton('Zoom out', self)
         self.zoom_out.resize(150, 50)
-        self.zoom_out.clicked.connect(lambda: self.label.zoom('out'))
+        self.zoom_out.clicked.connect(lambda: self.zoom('out'))
 
         write_csv = QPushButton('Write CSV', self)
         write_csv.resize(150, 50)
-        write_csv.clicked.connect(self.write_csv)
+        write_csv.clicked.connect(lambda: self.write_csv())
 
         self.show_channels = []
         for k in range(N_CHANNELS):
@@ -71,8 +83,7 @@ class QLabelDemo(QWidget):
             slider.setMinimum(0)
             slider.setMaximum(5000)
             slider.setValue(1000)
-            updater = ft.partial(self.update_brightness_mul, k)
-            slider.valueChanged.connect(updater)
+            slider.valueChanged.connect(lambda state, k=k: self.update_brightness_mul(k))
             self.brightness_mul.append(slider)
 
         self.label = ScrollLabel(self)
@@ -81,7 +92,7 @@ class QLabelDemo(QWidget):
         layout.addWidget(self.img_path_button, 0, 0)
         layout.addWidget(self.centers_path_button, 0, 1)
         layout.addWidget(write_csv, 0, 2)
-        layout.addWidget(self.set_origin, 1, 0)
+        layout.addWidget(self.set_origin_button, 1, 0)
         layout.addWidget(self.modify_centers, 1, 1)
         layout.addWidget(locate_blobs, 1, 2)
         layout.addWidget(self.zoom_in, 2, 0)
@@ -97,6 +108,12 @@ class QLabelDemo(QWidget):
 
         self.setGeometry(100, 100, 500, 400)
 
+    @require_image
+    def zoom(self, how: Literal['in', 'out']) -> None:
+        self.label.zoom(how)
+
+    # TODO: User should be able to update value even if img isn't loaded
+    @require_image
     def update_brightness_mul(self, channel):
         value = self.brightness_mul[channel].value() / 1000
         self.channels.set_brightness_mul(channel, value)
@@ -109,11 +126,17 @@ class QLabelDemo(QWidget):
             'Open Image File',
             mypath,
         )[0]
-        self.filename = path
-        self.channels = Channels(path)
-        self.centers.clear()
-        self.label.reset_image()
+        try:
+            self.channels = Channels(path)
+        except Exception as err:
+            error_msg(f"Failed to load file\n\n{path}\n\nError message:\n\n{err}")
+        else:
+            self.has_img = True
+            self.filename = path
+            self.centers.clear()
+            self.label.reset_image()
 
+    @require_image
     def get_centers_file(self):
         # TODO: Make sure centers is empty?
         mypath = os.path.dirname(os.path.realpath(__file__))
@@ -122,17 +145,34 @@ class QLabelDemo(QWidget):
             'Open Centers File',
             mypath,
         )[0]
-        data = pd.read_csv(path).set_index(['x', 'y'])
-        self.origin = data[data["distance"].lt(1e-5)].index[0]
-        self.centers = Centers(
-            data
-            .query("distance > 0")
-            .drop(columns='distance')
-            .apply(tuple, axis=1)
-            .to_dict()
-        )
+        try:
+            data = pd.read_csv(path).set_index(['x', 'y'])
+            self.centers = Centers(
+                data
+                .query("distance > 0")
+                .drop(columns='distance')
+                .apply(tuple, axis=1)
+                .to_dict()
+            )
+        except Exception as err:
+            error_msg(f"Failed to load file\n\n{path}\n\nError message:\n\n{err}")
+            return
+
+        if not self.centers.are_in_img(self.channels[0].shape):
+            self.centers.clear()
+            error_msg("Centers file has points outside of image bounds. Refusing file.")
+            return
+
+        try:
+            self.origin = data[data["distance"].lt(1e-5)].index[0]
+        except Exception as err:
+            error_msg(f"Failed to find origin in centers file. Error message:\n\n{err}")
+            self.centers.clear()
+            return
+
         self.label.update_image()
 
+    @require_image
     def activate_set_origin(self):
         if self.state == 'setting_origin':
             self.state = 'none'
@@ -140,6 +180,7 @@ class QLabelDemo(QWidget):
             self.state = 'setting_origin'
         self.update_state_buttons()
 
+    @require_image
     def activate_modify_centers(self):
         if self.state == 'modifying_centers':
             self.state = 'none'
@@ -147,6 +188,7 @@ class QLabelDemo(QWidget):
             self.state = 'modifying_centers'
         self.update_state_buttons()
 
+    @require_image
     def update_state_buttons(self):
         for name, button in self.button_states.items():
             label_text = name.replace('_', ' ')
@@ -155,6 +197,7 @@ class QLabelDemo(QWidget):
             else:
                 button.setText(f'Start {label_text}')
 
+    @require_image
     def add_center(self, source, event):
         x, y = self.mouse_to_pixel(event.pos().x(), event.pos().y())
         closest = self.centers.closest((x, y), radius=10)
@@ -162,6 +205,7 @@ class QLabelDemo(QWidget):
             self.centers[x, y] = self.channels.color(self.visible_channels())
             self.label.update_image()
 
+    @require_image
     def remove_center(self, source, event):
         x, y = self.mouse_to_pixel(event.pos().x(), event.pos().y())
         closest = self.centers.closest((x, y), radius=30)
@@ -172,11 +216,7 @@ class QLabelDemo(QWidget):
     def eventFilter(self, source, event):
         if event.type() == QtCore.QEvent.MouseButtonPress:
             if self.state == 'setting_origin' and event.button() == QtCore.Qt.LeftButton:
-                x, y = self.mouse_to_pixel(event.pos().x(), event.pos().y())
-                self.origin = (x, y)
-                self.state = 'none'
-                self.update_state_buttons()
-                self.label.update_image()
+                self.set_origin(source, event)
             elif self.state == 'modifying_centers':
                 if event.button() == QtCore.Qt.LeftButton:
                     self.add_center(source, event)
@@ -185,27 +225,32 @@ class QLabelDemo(QWidget):
 
         return super().eventFilter(source, event)
 
-    def get_label_pos(self, pos) -> tuple[int, int]:
-        local_pos = self.label.mapFromParent(pos)
-        # contentsRect = QtCore.QRectF(self.label.contentsRect())
-        # local_pos -= contentsRect.topLeft()
-        x, y = int(local_pos.x()), int(local_pos.y())
-        return x, y
+    @require_image
+    def set_origin(self, source, event):
+        x, y = self.mouse_to_pixel(event.pos().x(), event.pos().y())
+        self.origin = (x, y)
+        self.state = 'none'
+        self.update_state_buttons()
+        self.label.update_image()
 
+    @require_image
     def mouse_to_pixel(self, x, y):
         # Prefer numpy C-style coordinates: x=row, y=column
         x, y = y, x
         x_pct = x / self.label.label.width()
         y_pct = y / self.label.label.height()
-        result_x = int(x_pct * self.channels.width)
-        result_y = int(y_pct * self.channels.height)
-        return result_x, result_y
+        result = int(x_pct * self.channels.width), int(y_pct * self.channels.height)
+        return result
 
+    @require_image
     def locate_blobs(self):
+        # TODO!
+        return
         self.centers = analyze.identify_centers(self.channels.base.arr)
         self.label.update_image()
 
-    # TODO: Overload
+    # TODO: Type Overload
+    @require_image
     def visible_channels(self, dtype=int) -> list[int | str]:
         visible_channels = [k for k, checkbox in enumerate(self.show_channels) if checkbox.isChecked()]
         if dtype is int:
@@ -214,10 +259,13 @@ class QLabelDemo(QWidget):
             mapper = self.channels.mapper
             return {k: mapper[v] for k, v in visible_channels.items()}
 
+    @require_image
     def write_csv(self):
         if self.origin is None:
+            error_msg("Must set origin to write CSV file.")
             return
         if len(self.centers) == 0:
+            error_msg("Must set at least one center to write CSV file.")
             return
 
         x0, y0 = self.origin

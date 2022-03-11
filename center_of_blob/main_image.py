@@ -1,12 +1,8 @@
-from PyQt5.QtWidgets import QScrollArea, QWidget, QVBoxLayout, QLabel
-from PyQt5.QtCore import Qt, QEvent
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtWidgets import QScrollArea, QLabel
+from PyQt5.QtCore import QEvent
 from typing import Literal
-from PyQt5.QtGui import QPixmap
 from PyQt5 import QtGui
 from PyQt5.QtCore import Qt
-from PIL import Image
-import numpy as np
 
 from center_of_blob import analyze
 

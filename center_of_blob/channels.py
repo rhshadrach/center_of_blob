@@ -29,8 +29,6 @@ class Channels:
         self.img.seek(3)
         self._channels.append(np.asarray(self.img))
 
-        self._combined = self.as_rgb(range(len(self._channels)))
-
     def set_brightness_add(self, channel, value):
         channel = self._funnel_channel(channel)
         self.brightness_add[channel] = value
@@ -65,11 +63,6 @@ class Channels:
 
     def __len__(self) -> int:
         return len(self._channels)
-
-    # TODO: Learn numpy type-hints
-    @property
-    def all(self):
-        return self._combined
 
     # TODO: Learn numpy type-hints
     def as_rgb(self, channels: Iterable[ChannelT]):
@@ -113,7 +106,7 @@ class Channels:
 
     def _funnel_channel(self, channel: ChannelT) -> int:
         if isinstance(channel, str):
-            result = [channel]
+            result = self._mapper[channel]
         else:
             result = channel
         return result
