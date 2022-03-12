@@ -1,8 +1,5 @@
-import center_of_blob
-from center_of_blob import analyze
-from center_of_blob import centers
-from center_of_blob import channels
-from center_of_blob import main
-from center_of_blob import main_image
+__version__ = open('VERSION', "rt").read().strip()
 
-__all__ = ["analyze", "centers", "channels", "main", "main_image"]
+from center_of_blob import analyze, centers, channels, main, main_image, popups
+
+__all__ = ["analyze", "centers", "channels", "main", "main_image", "popups"]

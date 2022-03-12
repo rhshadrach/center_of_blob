@@ -1,12 +1,8 @@
-from PyQt5.QtWidgets import QScrollArea, QWidget, QVBoxLayout, QLabel
-from PyQt5.QtCore import Qt, QEvent
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtWidgets import QScrollArea, QLabel, QScroller
+from PyQt5.QtCore import QEvent
 from typing import Literal
-from PyQt5.QtGui import QPixmap
 from PyQt5 import QtGui
 from PyQt5.QtCore import Qt
-from PIL import Image
-import numpy as np
 
 from center_of_blob import analyze
 
@@ -14,6 +10,8 @@ from center_of_blob import analyze
 class ScrollLabel(QScrollArea):
     def __init__(self, parent):
         QScrollArea.__init__(self, parent)
+
+        QScroller.grabGesture(self.viewport(), QScroller.LeftMouseButtonGesture)
 
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
@@ -25,6 +23,8 @@ class ScrollLabel(QScrollArea):
 
         # No image has been loaded yet
         self._height = None
+
+        self._cache = None
 
         label = self.label
         label.setAlignment(Qt.AlignCenter)
@@ -49,14 +49,29 @@ class ScrollLabel(QScrollArea):
         self._height = None
         self.update_image()
 
-    def update_image(self):
-        self._maybe_init_height(self.parent())
-        parent = self.parent()
-        arr = parent.channels.as_rgb(parent.visible_channels())
+    def invalidate_cache(self):
+        self._cache = None
 
-        arr = analyze.highlight_points(arr, parent.centers)
+    def update_image(self):
+        parent = self.parent().parent()
+        self._maybe_init_height(parent)
+
+
+        if self._cache is None:
+            self._cache = parent.channels.as_rgb(parent.visible_channels())
+        arr = self._cache.copy()
+
+        analyze.highlight_points_dict(arr, parent.centers)
         if parent.origin is not None:
             analyze.highlight_point(arr, parent.origin, color=(255, 255, 0))
+
+        for region in parent.regions:
+            analyze.highlight_points(arr, region.points, (255, 69, 0))
+            analyze.highlight_line_segments(arr, region.points, (255, 69, 0))
+
+        if parent.current_region is not None:
+            analyze.highlight_points(arr, parent.current_region.points, (255, 69, 0))
+            analyze.highlight_line_segments(arr, parent.current_region.points, (255, 69, 0))
 
         height, width, channel = arr.shape
         bytes_per_line = 3 * width
