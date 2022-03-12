@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 class Centers(dict):
     def closest(self, point, radius=None):
         x, y = point
@@ -14,3 +16,11 @@ class Centers(dict):
 
     def are_in_img(self, shape: tuple[int, int]) -> bool:
         return all(0 <= x < shape[1] and 0 <= y < shape[0] for x, y in self)
+
+
+@dataclass
+class Center:
+    x: int
+    y: int
+    color: tuple[int, int, int]
+    region: str

@@ -8,18 +8,23 @@ N_CHANNELS = 4
 
 
 class Channels:
-    def __init__(self, filename: str):
+    def __init__(self):
         # TODO: Can this depend on the file?
         self._mapper = {'base': 0, 'r': 1, 'g': 2, 'b': 3}
-        self.filename = filename
-        self.img = Image.open(self.filename)
-        # TODO: Error checking: # of frames
-        self.arr = np.asarray(self.img)
+        self.filename = None
+        self.img = None
+        self.arr = None
 
-        self.brightness_add = N_CHANNELS * [0]
-        self.brightness_mul = N_CHANNELS * [1]
+        self.brightness = [(0, 255), (0, 255), (0, 255), (0, 255)]
 
         self._channels = []
+
+    def load_image(self, filename: str):
+        self.filename = filename
+        self.img = Image.open(self.filename)
+        self.arr = np.asarray(self.img)
+        self._channels = []
+
         self.img.seek(0)
         self._channels.append(np.asarray(self.img))
         self.img.seek(1)
@@ -29,13 +34,9 @@ class Channels:
         self.img.seek(3)
         self._channels.append(np.asarray(self.img))
 
-    def set_brightness_add(self, channel, value):
+    def set_brightness(self, channel, low, high):
         channel = self._funnel_channel(channel)
-        self.brightness_add[channel] = value
-
-    def set_brightness_mul(self, channel, value):
-        channel = self._funnel_channel(channel)
-        self.brightness_mul[channel] = value
+        self.brightness[channel] = (low, high)
 
     # TODO: Learn numpy type-hints
     @property
@@ -76,21 +77,38 @@ class Channels:
             buffer = []
             for channel in range(1, len(self._channels)):
                 if channel in channels:
-                    data = self._channels[channel] * self.brightness_mul[channel]
-                    buffer.append(data.astype('uint8'))
+                    low, high = self.brightness[channel]
+                    data = self._channels[channel]
+                    if low > 0 or high < 255:
+                        data = self.clip_data(data, low, high)
+                    buffer.append(data.astype('int'))
                 else:
                     buffer.append(filler)
             result = np.dstack(buffer)
 
         if 0 in channels:
-            data = self._channels[0] * self.brightness_mul[0]
-            channel0 = np.dstack(3*[data.astype('uint8')])
+            data = self._channels[0]
+            low, high = self.brightness[0]
+            if low > 0 or high < 255:
+                data = self.clip_data(data, low, high)
+            channel0 = np.dstack(3*[data.astype('int')])
             if result is None:
                 result = channel0
             else:
                 result += channel0
+                result = result.clip(max=255)
+        result = result.astype('uint8')
 
         return result
+
+    def clip_data(self, data, low, high):
+        data = data.copy()
+        off = data < low
+        on = data > high
+        data = np.rint(255.0 * (data - low) / (high - low)).astype(int)
+        data[off] = 0
+        data[on] = 255
+        return data
 
     @property
     def mapper(self):
