@@ -74,13 +74,11 @@ class RangeSlider(QtWidgets.QSlider):
         # if self.tickPosition() != self.NoTicks:
         #    opt.subControls |= QtWidgets.QStyle.SC_SliderTickmarks
         opt.siderValue = 0
-        # print(self._low)
         opt.sliderPosition = self._low
         low_rect = style.subControlRect(QtWidgets.QStyle.CC_Slider, opt, QtWidgets.QStyle.SC_SliderHandle, self)
         opt.sliderPosition = self._high
         high_rect = style.subControlRect(QtWidgets.QStyle.CC_Slider, opt, QtWidgets.QStyle.SC_SliderHandle, self)
 
-        # print(low_rect, high_rect)
         low_pos = self.__pick(low_rect.center())
         high_pos = self.__pick(high_rect.center())
 
@@ -88,14 +86,12 @@ class RangeSlider(QtWidgets.QSlider):
         max_pos = max(low_pos, high_pos)
 
         c = QtCore.QRect(low_rect.center(), high_rect.center()).center()
-        # print(min_pos, max_pos, c)
         if opt.orientation == QtCore.Qt.Horizontal:
             span_rect = QtCore.QRect(QtCore.QPoint(min_pos, c.y() - 2), QtCore.QPoint(max_pos, c.y() + 1))
         else:
             span_rect = QtCore.QRect(QtCore.QPoint(c.x() - 2, min_pos), QtCore.QPoint(c.x() + 1, max_pos))
 
         # self.initStyleOption(opt)
-        # print(groove.x(), groove.y(), groove.width(), groove.height())
         if opt.orientation == QtCore.Qt.Horizontal:
             groove.adjust(0, 0, -1, 0)
         else:
