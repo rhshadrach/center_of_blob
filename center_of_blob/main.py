@@ -7,6 +7,8 @@ from PyQt5.QtGui import QIntValidator
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
 from PyQt5 import QtWidgets
+import traceback
+import datetime
 
 import numpy as np
 import pandas as pd
@@ -15,8 +17,8 @@ from center_of_blob.main_image import ScrollLabel
 from center_of_blob.channels import Channels, N_CHANNELS
 from center_of_blob.centers import Centers, Center
 from center_of_blob.popups import error_msg, about_dialog
-from boxed_range_slider import BoxedRangeSlider
-from region import Region
+from center_of_blob.boxed_range_slider import BoxedRangeSlider
+from center_of_blob.region import Region
 
 
 # TODO: Why do we have to use lambda with the .connect calls below when using this?
@@ -163,7 +165,6 @@ class QLabelDemo(QMainWindow):
     def update_mouse_colors(self):
         for k, checkbox in enumerate(self.mouse_colors):
             self.colors[k] = checkbox.isChecked()
-        print(self.colors)
 
     def get_img_file(self):
         mypath = os.path.dirname(os.path.realpath(__file__))
@@ -185,7 +186,6 @@ class QLabelDemo(QMainWindow):
     def make_regions(self, data):
         data = data[data['kind'] == 'region']
         for name, df in data.groupby('region'):
-            print(df)
             points = zip(df['x'], df['y'])
             region = Region()
             for point in points:
@@ -302,7 +302,7 @@ class QLabelDemo(QMainWindow):
         if closest is None:
             current_color = (0, 0, 0)
         else:
-            current_color = self.centers[closest]
+            current_color = self.centers[closest].color
             x, y = closest
         color = self.union_colors(current_color, new_color)
         region_name = ''
@@ -416,8 +416,22 @@ class QLabelDemo(QMainWindow):
         ).to_csv(name, index=False)
 
 
+def except_hook(cls, exception, tb):
+    timestamp = datetime.datetime.now()
+    stacktrace = traceback.format_tb(tb)
+    msg = f'Error: {cls} -- {exception}\nStacktrace\n'
+    for line in stacktrace:
+        msg += f'{line}\n'
+    filename = f'cob_error_{timestamp}.log'
+    with open(filename, 'w') as f:
+        f.write(msg)
+    error_msg(f'Unexpected exception occured. The file \n\n{filename}\n\n was created with the following log\n\n{msg}\n')
+
+
 if __name__ == '__main__':
+    sys.excepthook = except_hook
     app = QApplication(sys.argv)
     main = QLabelDemo()
     main.show()
     sys.exit(app.exec_())
+

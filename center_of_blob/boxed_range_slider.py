@@ -1,7 +1,7 @@
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtWidgets import QAbstractSpinBox
 
-from range_slider import RangeSlider
+from center_of_blob.range_slider import RangeSlider
 
 
 class BoxedRangeSlider(QtWidgets.QWidget):
