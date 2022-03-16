@@ -14,65 +14,59 @@ import itertools as it
 from scipy.sparse import csr_matrix
 
 
-def identify_centers(data, sigma: float = 1.0) -> list[tuple[float, float]]:
-    # first = imageio.imread('center_of_blob/first.jpg')
+def get_center(idx):
+    x, y = idx[0].start + (idx[0].stop - idx[0].start) / 2, idx[1].start + (idx[1].stop - idx[1].start) / 2
+    return int(x), int(y)
 
-    level = 5
-    sigma = 0.25
-    blob_size = 50
 
-    mask = (data[:, :, 0] > level) & (data[:, :, 1] > level) & (data[:, :, 2] > level)
-    white_only = data.copy()
-    white_only[:, :, 0] = white_only[:, :, 0] * mask
-    white_only[:, :, 1] = white_only[:, :, 1] * mask
-    white_only[:, :, 2] = white_only[:, :, 2] * mask
+def get_surrounding(data, point, radius):
+    x_low = point[0] - radius
+    x_high = point[0] + radius
+    y_low = point[1] - radius
+    y_high = point[1] + radius
+    return data[x_low:x_high, y_low:y_high]
 
-    gray = color.rgb2gray(white_only)
 
-    # smoothed = ndimage.gaussian_filter(gray, sigma=sigma)
-    # smoothed = gray
-    # hist, bin_edges = np.histogram(smoothed, bins=60)
-    # bin_centers = 0.5*(bin_edges[:-1] + bin_edges[1:])
-    # binary_img = smoothed > 0.1
+def identify_centers(
+        data,
+        sigma: float = 1.0,
+        gaussian_cutoff: int = 20,
+        open_iterations: int = 2,
+        open_structure=None,
+        blob_size_min: int = 20,
+        blob_size_max: int = 2000,
+) -> list[tuple[float, float]]:
+    smoothed = ndimage.gaussian_filter(data, sigma=sigma)
+    binary_img = smoothed > gaussian_cutoff
+    # plt.figure(figsize = (15, 10)); plt.imshow(binary_img); plt.show()
 
-    # open_img = ndimage.binary_opening(binary_img, iterations=2)
-    # open_img = binary_img
-    # close_img = ndimage.binary_closing(open_img, iterations=2)
+    # open_img = ndimage.binary_opening(binary_img, structure=open_structure, iterations=open_iterations)
+    open_img = ndimage.binary_erosion(binary_img, structure=open_structure, iterations=open_iterations)
+    # close_img = ndimage.binary_closing(open_img, iterations=close_iterations)
+    close_img = open_img.copy()
 
-    result = gray > 0.04
-    for k in range(10):
-        result = ndimage.binary_opening(result, iterations=1)
-        result = ndimage.binary_closing(result, iterations=1)
+    label_im, nb_labels = ndimage.label(close_img)
 
-    label_im, nb_labels = ndimage.label(result)
+    print('# of labels:', nb_labels)
 
-    (unique, counts) = np.unique(label_im, return_counts=True)
-    freq = np.asarray((unique, counts)).T
-
-    labels = [e for e in freq[freq[:, 1] > blob_size][:, 0].tolist() if e != 0]
+    labels = []
+    for k, idx in enumerate(ndimage.find_objects(label_im, nb_labels), 1):
+        subimg = label_im[idx]
+        count = subimg[subimg == k].shape[0]
+        if blob_size_min <= count <= blob_size_max:
+            labels.append(k)
     large_blobs = np.isin(label_im, labels)
     label_im2, nb_labels2 = ndimage.label(large_blobs)
 
+    print('# of labels:', nb_labels2)
+
     centers = []
-
-    def compute_M(data):
-        cols = np.arange(data.size)
-        return csr_matrix((cols, (data.ravel(), cols)),
-                          shape=(data.max() + 1, data.size))
-
-    def get_indices_sparse(data):
-        M = compute_M(data)
-        return [np.unravel_index(row.data, data.shape) for row in M]
-
-    d = get_indices_sparse(label_im2)
-
-    # TODO: Need better way to skip black; k == 0 below
-    for k in range(1, len(d)):
-        centers.append((int(d[k][0].mean()), int(d[k][1].mean())))
+    for idx in ndimage.find_objects(label_im2, nb_labels2):
+        center = get_center(idx)
+        if get_surrounding(close_img, center, radius=5).mean() > 0.8:
+            centers.append(center)
 
     return centers
-
-
 def highlight_points(data, points, color):
     for point in points:
         highlight_point(data, point, color)
