@@ -47,8 +47,6 @@ def identify_centers(
 
     label_im, nb_labels = ndimage.label(close_img)
 
-    print('# of labels:', nb_labels)
-
     labels = []
     for k, idx in enumerate(ndimage.find_objects(label_im, nb_labels), 1):
         subimg = label_im[idx]
@@ -57,8 +55,6 @@ def identify_centers(
             labels.append(k)
     large_blobs = np.isin(label_im, labels)
     label_im2, nb_labels2 = ndimage.label(large_blobs)
-
-    print('# of labels:', nb_labels2)
 
     centers = []
     for idx in ndimage.find_objects(label_im2, nb_labels2):

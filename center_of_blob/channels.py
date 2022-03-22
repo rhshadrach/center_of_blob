@@ -76,7 +76,6 @@ class Channels:
 
     def _make_channel_data(self, channel):
         if channel in self._channel_cache:
-            print('using cache', channel)
             return self._channel_cache[channel]
         low, high = self.brightness[channel]
         data = self._channels[channel]

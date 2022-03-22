@@ -376,7 +376,6 @@ class QLabelDemo(QMainWindow):
     def locate_blobs(self):
         colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255)]
         for channel, color in zip(self.channels[1:], colors):
-            print('Starting color', color)
             centers = analyze.identify_centers(
                 channel,
                 sigma=2.0,
