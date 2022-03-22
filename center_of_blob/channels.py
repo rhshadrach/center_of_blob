@@ -1,4 +1,4 @@
-from typing import Literal, Iterable
+from typing import Literal, Iterable, Optional
 
 import numpy as np
 from PIL import Image
@@ -18,6 +18,7 @@ class Channels:
         self.brightness = [(0, 255), (0, 255), (0, 255), (0, 255)]
 
         self._channels = []
+        self._channel_cache = {}
 
     def load_image(self, filename: str):
         self.filename = filename
@@ -36,7 +37,9 @@ class Channels:
 
     def set_brightness(self, channel, low, high):
         channel = self._funnel_channel(channel)
-        self.brightness[channel] = (low, high)
+        if self.brightness[channel] != (low, high):
+            self.brightness[channel] = (low, high)
+            self.invalidate_channel_cache(channel)
 
     # TODO: Learn numpy type-hints
     @property
@@ -65,40 +68,44 @@ class Channels:
     def __len__(self) -> int:
         return len(self._channels)
 
+    def invalidate_channel_cache(self, channel: Optional[int]):
+        if channel is None:
+            self._channel_cache = {}
+        else:
+            del self._channel_cache[channel]
+
+    def _make_channel_data(self, channel):
+        if channel in self._channel_cache:
+            print('using cache', channel)
+            return self._channel_cache[channel]
+        low, high = self.brightness[channel]
+        data = self._channels[channel]
+        if low > 0 or high < 255:
+            data = self.clip_data(data, low, high)
+        filler = np.zeros_like(data, dtype='uint8')
+        # TODO: Do we need to cast here?
+        data = data.astype('uint8')
+        if channel != 0:
+            buffer = [filler if k != channel else data for k in range(1, 4)]
+        else:
+            buffer = 3 * [data]
+        result = np.dstack(buffer)
+        self._channel_cache[channel] = result
+        return result
+
     # TODO: Learn numpy type-hints
     def as_rgb(self, channels: Iterable[ChannelT]):
         channels = sorted(self._funnel_channel(channel) for channel in channels)
-        filler = np.zeros_like(self._channels[0])
         result = None
 
-        # Only gather color-specific channels if necessary
         if channels != [0]:
-            # Channel 0 is handled specially below
-            buffer = []
-            for channel in range(1, len(self._channels)):
-                if channel in channels:
-                    low, high = self.brightness[channel]
-                    data = self._channels[channel]
-                    if low > 0 or high < 255:
-                        data = self.clip_data(data, low, high)
-                    buffer.append(data.astype('int'))
-                else:
-                    buffer.append(filler)
-            result = np.dstack(buffer)
-
+            result = sum(self._make_channel_data(c) for c in range(1, 4) if c in channels)
         if 0 in channels:
-            data = self._channels[0]
-            low, high = self.brightness[0]
-            if low > 0 or high < 255:
-                data = self.clip_data(data, low, high)
-            channel0 = np.dstack(3*[data.astype('int')])
+            channel0 = self._make_channel_data(0)
             if result is None:
                 result = channel0
             else:
                 result += channel0
-                result = result.clip(max=255)
-        result = result.astype('uint8')
-
         return result
 
     def clip_data(self, data, low, high):

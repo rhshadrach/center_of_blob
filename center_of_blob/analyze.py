@@ -114,8 +114,22 @@ def draw_line(mat, x0, y0, x1, y1, color):
 
 def highlight_point(data, point, color=(255, 255, 255)):
     xx, yy = point
-    for k in range(4):
-        for l in range(4):
+    for k in range(5):
+        for l in range(5):
+            data[xx + k, yy + l] = color
+            data[xx + k, yy - l] = color
+            data[xx - k, yy + l] = color
+            data[xx - k, yy - l] = color
+            data[xx + l, yy + k] = color
+            data[xx - l, yy + k] = color
+            data[xx + l, yy - k] = color
+            data[xx - l, yy - k] = color
+
+    color = 255, 255, 255
+    for k in range(7):
+        for l in range(7):
+            if k < 5 and l < 5:
+                continue
             data[xx + k, yy + l] = color
             data[xx + k, yy - l] = color
             data[xx - k, yy + l] = color
