@@ -44,6 +44,8 @@ class QLabelDemo(QMainWindow):
         self.colors = {0: False, 1: False, 2: False}
         self.current_region = None
         self.regions = []
+        self.show_centers = True
+        self.center_colors = "normal"
 
         self.img_path_button = QPushButton("Select Image File")
         self.img_path_button.clicked.connect(self.get_img_file)
@@ -167,6 +169,18 @@ class QLabelDemo(QMainWindow):
             self.colors[k] = checkbox.isChecked()
 
     def get_img_file(self):
+        self.state = 'none'
+        self.origin = None
+        self.channels = Channels()
+        self.filename = None
+        self.centers = Centers()
+        self.has_img = False
+        self.colors = {0: False, 1: False, 2: False}
+        self.current_region = None
+        self.regions = []
+        self.show_centers = True
+        self.center_colors = "normal"
+
         mypath = os.path.dirname(os.path.realpath(__file__))
         path = QFileDialog.getOpenFileName(
             self,
@@ -195,7 +209,18 @@ class QLabelDemo(QMainWindow):
 
     @require_image
     def get_centers_file(self):
-        # TODO: Make sure centers is empty?
+        self.state = 'none'
+        self.origin = None
+        self.channels = Channels()
+        self.filename = None
+        self.centers = Centers()
+        self.has_img = False
+        self.colors = {0: False, 1: False, 2: False}
+        self.current_region = None
+        self.regions = []
+        self.show_centers = True
+        self.center_colors = "normal"
+
         mypath = os.path.dirname(os.path.realpath(__file__))
         path = QFileDialog.getOpenFileName(
             self,
@@ -332,6 +357,15 @@ class QLabelDemo(QMainWindow):
             del self.centers[closest]
             self.label.update_image()
 
+    @require_image
+    def remove_region(self, source, event):
+        x, y = self.mouse_to_pixel(event.pos().x(), event.pos().y())
+        for k, region in enumerate(self.regions):
+            if region.contains_point((x, y), radius=30):
+                self.regions.pop(k)
+                self.label.update_image()
+                return
+
     def eventFilter(self, source, event):
         if event.type() == QtCore.QEvent.MouseButtonPress:
             if self.state == 'setting_origin' and event.button() == QtCore.Qt.LeftButton:
@@ -344,6 +378,8 @@ class QLabelDemo(QMainWindow):
             elif self.state == 'drawing_region':
                 if event.button() == QtCore.Qt.LeftButton:
                     self.add_region_point(source, event)
+            elif event.button() == QtCore.Qt.RightButton:
+                self.remove_region(source, event)
         return super().eventFilter(source, event)
 
     def keyPressEvent(self, event):
@@ -353,6 +389,23 @@ class QLabelDemo(QMainWindow):
             self.mouse_colors[1].setChecked(not self.mouse_colors[1].isChecked())
         elif event.key() == Qt.Key_B or event.key() == Qt.Key_3:
             self.mouse_colors[2].setChecked(not self.mouse_colors[2].isChecked())
+        elif event.key() == Qt.Key_A:
+            self.show_channels[0].setChecked(not self.show_channels[0].isChecked())
+        elif event.key() == Qt.Key_S:
+            self.show_channels[1].setChecked(not self.show_channels[1].isChecked())
+        elif event.key() == Qt.Key_D:
+            self.show_channels[2].setChecked(not self.show_channels[2].isChecked())
+        elif event.key() == Qt.Key_F:
+            self.show_channels[3].setChecked(not self.show_channels[3].isChecked())
+        elif event.key() == Qt.Key_Space:
+            self.show_centers = not self.show_centers
+            self.label.update_image()
+        elif event.key() == Qt.Key_Enter or event.key() == Qt.Key_Return:
+            if self.center_colors == "normal":
+                self.center_colors = "black"
+            else:
+                self.center_colors = "normal"
+            self.label.update_image()
         event.accept()
 
     @require_image
