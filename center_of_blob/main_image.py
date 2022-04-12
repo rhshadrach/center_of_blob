@@ -56,22 +56,24 @@ class ScrollLabel(QScrollArea):
         parent = self.parent().parent()
         self._maybe_init_height(parent)
 
-
         if self._cache is None:
             self._cache = parent.channels.as_rgb(parent.visible_channels())
         arr = self._cache.copy()
 
-        analyze.highlight_points_dict(arr, parent.centers)
+        if parent.show_centers:
+            color = None if parent.center_colors == "normal" else (0, 0, 0)
+            border_color = (255, 255, 255) if parent.center_colors == "normal" else (0, 0, 0)
+            analyze.highlight_points_dict(arr, parent.centers, color, border_color)
         if parent.origin is not None:
             analyze.highlight_point(arr, parent.origin, color=(255, 255, 0))
 
         for region in parent.regions:
-            analyze.highlight_points(arr, region.points, (255, 69, 0))
-            analyze.highlight_line_segments(arr, region.points, (255, 69, 0))
+            analyze.highlight_points(arr, region.points, (240, 50, 230))
+            analyze.highlight_line_segments(arr, region.points, (240, 50, 230))
 
         if parent.current_region is not None:
-            analyze.highlight_points(arr, parent.current_region.points, (255, 69, 0))
-            analyze.highlight_line_segments(arr, parent.current_region.points, (255, 69, 0))
+            analyze.highlight_points(arr, parent.current_region.points, (240, 50, 230))
+            analyze.highlight_line_segments(arr, parent.current_region.points, (240, 50, 230))
 
         height, width, channel = arr.shape
         bytes_per_line = 3 * width

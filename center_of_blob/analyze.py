@@ -68,9 +68,13 @@ def highlight_points(data, points, color):
         highlight_point(data, point, color)
 
 
-def highlight_points_dict(data, centers):
+def highlight_points_dict(data, centers, color=None, border_color=(255, 255, 255)):
     for (x, y), center in centers.items():
-        highlight_point(data, (x, y), center.color)
+        if color is None:
+            c = center.color
+        else:
+            c = color
+        highlight_point(data, (x, y), c, border_color)
 
 
 def highlight_line_segments(data, points, color):
@@ -108,7 +112,7 @@ def draw_line(mat, x0, y0, x1, y1, color):
     mat[x, y] = color
 
 
-def highlight_point(data, point, color=(255, 255, 255)):
+def highlight_point(data, point, color=(255, 255, 255), border_color=(255, 255, 255)):
     xx, yy = point
     for k in range(5):
         for l in range(5):
@@ -121,16 +125,15 @@ def highlight_point(data, point, color=(255, 255, 255)):
             data[xx + l, yy - k] = color
             data[xx - l, yy - k] = color
 
-    color = 255, 255, 255
     for k in range(7):
         for l in range(7):
             if k < 5 and l < 5:
                 continue
-            data[xx + k, yy + l] = color
-            data[xx + k, yy - l] = color
-            data[xx - k, yy + l] = color
-            data[xx - k, yy - l] = color
-            data[xx + l, yy + k] = color
-            data[xx - l, yy + k] = color
-            data[xx + l, yy - k] = color
-            data[xx - l, yy - k] = color
+            data[xx + k, yy + l] = border_color
+            data[xx + k, yy - l] = border_color
+            data[xx - k, yy + l] = border_color
+            data[xx - k, yy - l] = border_color
+            data[xx + l, yy + k] = border_color
+            data[xx - l, yy + k] = border_color
+            data[xx + l, yy - k] = border_color
+            data[xx - l, yy - k] = border_color

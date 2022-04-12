@@ -99,7 +99,7 @@ class Channels:
 
         if channels != [0]:
             result = sum(self._make_channel_data(c) for c in range(1, 4) if c in channels)
-        if 0 in channels:
+        if 0 in channels or len(channels) == 0:
             channel0 = self._make_channel_data(0)
             if result is None:
                 result = channel0
