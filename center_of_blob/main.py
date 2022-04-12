@@ -374,9 +374,17 @@ class QLabelDemo(QMainWindow):
 
     @require_image
     def locate_blobs(self):
-        # TODO!
-        return
-        self.centers = analyze.identify_centers(self.channels.base.arr)
+        colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255)]
+        for channel, color in zip(self.channels[1:], colors):
+            centers = analyze.identify_centers(
+                channel,
+                sigma=2.0,
+                gaussian_cutoff=20,
+                open_structure=np.ones((5, 5)),
+                open_iterations=1,
+            )
+            for center in centers:
+                self.centers[center] = Center(*center, color, '')
         self.label.update_image()
 
     # TODO: Type Overload
