@@ -3,6 +3,8 @@ from PyQt5.QtCore import QEvent
 from typing import Literal
 from PyQt5 import QtGui
 from PyQt5.QtCore import Qt
+from PyQt5 import QtCore
+from PyQt5.QtWidgets import QApplication
 
 from center_of_blob import analyze
 
@@ -23,6 +25,8 @@ class ScrollLabel(QScrollArea):
 
         # No image has been loaded yet
         self._height = None
+        self._orig_height = None
+        self._height_factor = 1.0
 
         self._cache = None
 
@@ -32,18 +36,35 @@ class ScrollLabel(QScrollArea):
         label.setStyleSheet("padding: 0px; margin: 0px")
         label.setWordWrap(True)
 
+        self.installEventFilter(self)
+
     def setText(self, text):
         self.label.setText(text)
 
     def _maybe_init_height(self, parent):
         if self._height is None:
             self._height = parent.channels[0].shape[0] // 4
+            self._orig_height = self._height
 
-    def zoom(self, how: Literal['in', 'out']):
-        factor = 2.0 if how == 'in' else 0.5
-        if self._height <= 10000 or how == 'out':
-            self._height = int(factor * self._height)
+    def zoom(self, factor: float):
+
+        self._height = int(factor * self._orig_height)
         self.update_image()
+
+        halfwidth = self.width() // 2
+        halfheight = self.height() // 2
+
+        horz = self.horizontalScrollBar()
+        horz.setValue(
+            int((horz.value() + halfwidth) * factor / self._height_factor - halfwidth)
+        )
+
+        vert = self.verticalScrollBar()
+        vert.setValue(
+            int((vert.value() + halfheight) * factor / self._height_factor - halfheight)
+        )
+
+        self._height_factor = factor
 
     def reset_image(self):
         self._height = None
@@ -86,3 +107,10 @@ class ScrollLabel(QScrollArea):
 
     def event(self, event: QEvent):
         return super().event(event)
+
+    def eventFilter(self, source, event):
+        if event.type() == QtCore.QEvent.Wheel:
+            modifiers = QApplication.keyboardModifiers()
+            if bool(modifiers == QtCore.Qt.ControlModifier):
+                return True
+        return super().eventFilter(source, event)
