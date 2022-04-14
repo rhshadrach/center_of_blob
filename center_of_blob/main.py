@@ -388,6 +388,15 @@ class QLabelDemo(QMainWindow):
         for k, region in enumerate(self.regions):
             if region.contains_point((x, y), radius=30):
                 self.regions.pop(k)
+                self.label.update_image()
+                return
+
+    @require_image
+    def remove_region(self, source, event):
+        x, y = self.mouse_to_pixel(event.pos().x(), event.pos().y())
+        for k, region in enumerate(self.regions):
+            if region.contains_point((x, y), radius=30):
+                self.regions.pop(k)
                 self.classify_centers_by_regions()
                 self.label.update_image()
                 return
