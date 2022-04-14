@@ -46,6 +46,7 @@ class QLabelDemo(QMainWindow):
         self.regions = []
         self.show_centers = True
         self.center_colors = "normal"
+        self.enable_tooltip = True
 
         self.img_path_button = QPushButton("Select Image File")
         self.img_path_button.clicked.connect(self.get_img_file)
@@ -74,13 +75,13 @@ class QLabelDemo(QMainWindow):
         self.draw_region.clicked.connect(lambda: self.activate_drawing_region())
         self.button_states['drawing_region'] = self.draw_region
 
-        self.zoom_in = QPushButton('Zoom in', self)
-        self.zoom_in.resize(150, 50)
-        self.zoom_in.clicked.connect(lambda: self.zoom('in'))
-
-        self.zoom_out = QPushButton('Zoom out', self)
-        self.zoom_out.resize(150, 50)
-        self.zoom_out.clicked.connect(lambda: self.zoom('out'))
+        # self.zoom_in = QPushButton('Zoom in', self)
+        # self.zoom_in.resize(150, 50)
+        # self.zoom_in.clicked.connect(lambda: self.zoom('in'))
+        #
+        # self.zoom_out = QPushButton('Zoom out', self)
+        # self.zoom_out.resize(150, 50)
+        # self.zoom_out.clicked.connect(lambda: self.zoom('out'))
 
         write_csv = QPushButton('Write CSV', self)
         write_csv.resize(150, 50)
@@ -111,6 +112,13 @@ class QLabelDemo(QMainWindow):
             self.brightness.append(slider)
 
         self.label = ScrollLabel(self)
+        self.label.label.setMouseTracking(True)
+        # self.label.viewport().installEventFilter(self)
+
+        self.zoom = QSlider(QtCore.Qt.Horizontal)
+        self.zoom.setMinimum(100)
+        self.zoom.setMaximum(800)
+        self.zoom.valueChanged.connect(lambda: self.update_zoom())
 
         main = QWidget(self)
         self.setCentralWidget(main)
@@ -121,15 +129,16 @@ class QLabelDemo(QMainWindow):
         layout.addWidget(self.set_origin_button, 1, 0)
         layout.addWidget(self.modify_centers, 1, 1)
         layout.addWidget(self.draw_region, 1, 2)
-        layout.addWidget(self.zoom_in, 2, 0)
-        layout.addWidget(self.zoom_out, 2, 1)
+        # layout.addWidget(self.zoom_in, 2, 0)
+        # layout.addWidget(self.zoom_out, 2, 1)
         layout.addWidget(locate_blobs, 2, 2)
         for k in range(N_CHANNELS):
             layout.addWidget(self.show_channels[k], k, 3)
             layout.addWidget(self.brightness[k], k, 6)
         for k, checkbox in enumerate(self.mouse_colors):
             layout.addWidget(checkbox, 3, k)
-        layout.addWidget(self.label, 4, 0, 1, 7)
+        layout.addWidget(self.zoom, 4, 0, 1, 7)
+        layout.addWidget(self.label, 5, 0, 1, 7)
 
         # layout.setColumnStretch(6, 1)
         # layout.setRowStretch(4, 1)
@@ -148,8 +157,12 @@ class QLabelDemo(QMainWindow):
         help.addAction(show_about)
 
     @require_image
-    def zoom(self, how: Literal['in', 'out']) -> None:
-        self.label.zoom(how)
+    def update_zoom(self):
+        self.label.zoom(self.zoom.value() / 100)
+
+    # @require_image
+    # def zoom(self, how: Literal['in', 'out']) -> None:
+    #     self.label.zoom(how)
 
     def update_channels(self):
         self.label.invalidate_cache()
@@ -282,6 +295,33 @@ class QLabelDemo(QMainWindow):
         self.current_region.add_point((x, y))
         self.label.update_image()
 
+    def classify_center_by_regions(self, point, center):
+        buffer = []
+        for region in self.regions:
+            if region.contains(point):
+                buffer.append(region)
+        if len(buffer) == 0:
+            center.region = ''
+            return
+
+        region = buffer[0]
+        names = sorted(set(e.name for e in buffer))
+        if len(names) > 1:
+            msg = (
+                'Center belongs to multiple regions with different names:\n'
+            )
+            for name in names:
+                msg += f'  {name}\n'
+            msg += f'Classifying as {region.name}'
+            error_msg(msg)
+        center.region = region.name
+
+    def classify_centers_by_regions(self):
+        if len(self.centers) == 0:
+            return
+        for point, center in self.centers.items():
+            self.classify_center_by_regions(point, center)
+
     @require_image
     def stop_drawing_region(self):
         self.current_region.close()
@@ -289,18 +329,7 @@ class QLabelDemo(QMainWindow):
             name, done1 = QtWidgets.QInputDialog.getText(self, 'Name Region', 'Enter region name:')
             self.current_region.name = name
             self.regions.append(self.current_region)
-
-            if len(self.centers) > 0:
-                for point, center in self.centers.items():
-                    buffer = []
-                    for region in self.regions:
-                        if region.contains(point):
-                            buffer.append(region)
-                    if len(buffer) > 1:
-                        error_msg('Center belongs to two different regions! Classifying as the first.')
-                    if len(buffer) > 0:
-                        region = buffer[0]
-                        center.region = region.name
+            self.classify_centers_by_regions()
 
             self.label.update_image()
         self.current_region = None
@@ -330,12 +359,8 @@ class QLabelDemo(QMainWindow):
             current_color = self.centers[closest].color
             x, y = closest
         color = self.union_colors(current_color, new_color)
-        region_name = ''
-        for region in self.regions:
-            if region.contains((x, y)):
-                region_name = region.name
-                break
-        self.centers[x, y] = Center(x, y, color, region_name)
+        self.centers[x, y] = Center(x, y, color, '')
+        self.classify_center_by_regions((x, y), self.centers[x, y])
         self.label.update_image()
 
     def active_color(self):
@@ -366,6 +391,31 @@ class QLabelDemo(QMainWindow):
                 self.label.update_image()
                 return
 
+    @require_image
+    def remove_region(self, source, event):
+        x, y = self.mouse_to_pixel(event.pos().x(), event.pos().y())
+        for k, region in enumerate(self.regions):
+            if region.contains_point((x, y), radius=30):
+                self.regions.pop(k)
+                self.classify_centers_by_regions()
+                self.label.update_image()
+                return
+
+    def update_mouse_tooltip(self, source, event):
+        if not self.has_img:
+            return
+        if not self.enable_tooltip:
+            self.label.setToolTip('')
+            return
+        point = self.mouse_to_pixel(event.pos().x(), event.pos().y())
+
+        buffer = []
+        for region in self.regions:
+            if region.contains(point):
+                buffer.append(region.name)
+        self.label.setToolTip(', '.join(buffer))
+        self.label.setToolTipDuration(1500)
+
     def eventFilter(self, source, event):
         if event.type() == QtCore.QEvent.MouseButtonPress:
             if self.state == 'setting_origin' and event.button() == QtCore.Qt.LeftButton:
@@ -380,6 +430,14 @@ class QLabelDemo(QMainWindow):
                     self.add_region_point(source, event)
             elif event.button() == QtCore.Qt.RightButton:
                 self.remove_region(source, event)
+        if event.type() == QtCore.QEvent.MouseMove and self.enable_tooltip:
+            self.update_mouse_tooltip(source, event)
+
+        if event.type() == QtCore.QEvent.Wheel:
+            modifiers = QApplication.keyboardModifiers()
+            if bool(modifiers == QtCore.Qt.ControlModifier):
+                self.zoom.setValue(self.zoom.value() + int(event.angleDelta().y() / 5))
+                event.ignore()
         return super().eventFilter(source, event)
 
     def keyPressEvent(self, event):
@@ -406,6 +464,8 @@ class QLabelDemo(QMainWindow):
             else:
                 self.center_colors = "normal"
             self.label.update_image()
+        elif event.key() == Qt.Key_T:
+            self.enable_tooltip = not self.enable_tooltip
         event.accept()
 
     @require_image
