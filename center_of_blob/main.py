@@ -12,7 +12,7 @@ import datetime
 
 import numpy as np
 import pandas as pd
-from center_of_blob import analyze
+from center_of_blob.analyze import identify_centers
 from center_of_blob.main_image import ScrollLabel
 from center_of_blob.channels import Channels, N_CHANNELS
 from center_of_blob.centers import Centers, Center
@@ -145,7 +145,7 @@ class QLabelDemo(QMainWindow):
 
         main.setLayout(layout)
 
-        self.setWindowTitle('QLabel Example')
+        self.setWindowTitle('Center of Blob')
         self.label.label.installEventFilter(self)
 
         self.setGeometry(100, 100, 500, 400)
@@ -489,7 +489,7 @@ class QLabelDemo(QMainWindow):
     def locate_blobs(self):
         colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255)]
         for channel, color in zip(self.channels[1:], colors):
-            centers = analyze.identify_centers(
+            centers = identify_centers(
                 channel,
                 sigma=2.0,
                 gaussian_cutoff=20,
