@@ -222,12 +222,8 @@ class QLabelDemo(QMainWindow):
 
     @require_image
     def get_centers_file(self):
-        self.state = 'none'
         self.origin = None
-        self.channels = Channels()
-        self.filename = None
         self.centers = Centers()
-        self.has_img = False
         self.colors = {0: False, 1: False, 2: False}
         self.current_region = None
         self.regions = []
