@@ -44,7 +44,7 @@ class QLabelDemo(QMainWindow):
         self.colors = {0: False, 1: False, 2: False}
         self.current_region = None
         self.regions = []
-        self.show_centers = True
+        self.show_centers = [1, 2, 3]
         self.center_colors = "normal"
         self.enable_tooltip = True
 
@@ -101,6 +101,13 @@ class QLabelDemo(QMainWindow):
             check_box.stateChanged.connect(lambda: self.update_channels())
             self.show_channels.append(check_box)
 
+        self.show_center_checkboxes = {}
+        for k in range(1, N_CHANNELS):
+            check_box = QCheckBox(f'Center {k}')
+            check_box.setChecked(True)
+            check_box.stateChanged.connect(lambda: self.update_centers())
+            self.show_center_checkboxes[k] = check_box
+
         self.brightness_low = []
         self.brightness_high = []
         self.brightness = []
@@ -120,6 +127,12 @@ class QLabelDemo(QMainWindow):
         self.zoom.setMaximum(800)
         self.zoom.valueChanged.connect(lambda: self.update_zoom())
 
+        self.center_size_slider = QSlider(QtCore.Qt.Horizontal)
+        self.center_size_slider.setMinimum(1)
+        self.center_size_slider.setMaximum(10)
+        self.center_size_slider.setValue(5)
+        self.center_size_slider.valueChanged.connect(lambda: self.update_center_size())
+
         main = QWidget(self)
         self.setCentralWidget(main)
         layout = QGridLayout()
@@ -134,11 +147,14 @@ class QLabelDemo(QMainWindow):
         layout.addWidget(locate_blobs, 2, 2)
         for k in range(N_CHANNELS):
             layout.addWidget(self.show_channels[k], k, 3)
-            layout.addWidget(self.brightness[k], k, 6)
+            if k > 0:
+                layout.addWidget(self.show_center_checkboxes[k], k, 4)
+            layout.addWidget(self.brightness[k], k, 5)
         for k, checkbox in enumerate(self.mouse_colors):
             layout.addWidget(checkbox, 3, k)
-        layout.addWidget(self.zoom, 4, 0, 1, 7)
-        layout.addWidget(self.label, 5, 0, 1, 7)
+        layout.addWidget(self.zoom, 4, 0, 1, 6)
+        layout.addWidget(self.center_size_slider, 5, 0, 1, 6)
+        layout.addWidget(self.label, 6, 0, 1, 6)
 
         # layout.setColumnStretch(6, 1)
         # layout.setRowStretch(4, 1)
@@ -160,11 +176,24 @@ class QLabelDemo(QMainWindow):
     def update_zoom(self):
         self.label.zoom(self.zoom.value() / 100)
 
+    @require_image
+    def update_center_size(self):
+        self.label.invalidate_cache()
+        self.label.update_image()
+
     # @require_image
     # def zoom(self, how: Literal['in', 'out']) -> None:
     #     self.label.zoom(how)
 
     def update_channels(self):
+        self.label.invalidate_cache()
+        self.label.update_image()
+
+    def update_centers(self):
+        self.show_centers = []
+        for k in range(1, N_CHANNELS):
+            if self.show_center_checkboxes[k].isChecked():
+                self.show_centers.append(k)
         self.label.invalidate_cache()
         self.label.update_image()
 
@@ -191,7 +220,7 @@ class QLabelDemo(QMainWindow):
         self.colors = {0: False, 1: False, 2: False}
         self.current_region = None
         self.regions = []
-        self.show_centers = True
+        self.show_centers = [1, 2, 3]
         self.center_colors = "normal"
 
         mypath = os.path.dirname(os.path.realpath(__file__))
@@ -201,7 +230,7 @@ class QLabelDemo(QMainWindow):
             mypath,
         )[0]
         try:
-            self.channels.load_image(path)
+            disable_channel_0 = self.channels.load_image(path)
         except Exception as err:
             error_msg(f"Failed to load file\n\n{path}\n\nError message:\n\n{err}")
         else:
@@ -209,6 +238,13 @@ class QLabelDemo(QMainWindow):
             self.filename = path
             self.centers.clear()
             self.label.reset_image()
+            if disable_channel_0:
+                self.show_channels[0].setChecked(False)
+                self.show_channels[0].setDisabled(True)
+                self.brightness[0].setDisabled(True)
+            else:
+                self.show_channels[0].setDisabled(False)
+                self.brightness[0].setDisabled(False)
 
     def make_regions(self, data):
         data = data[data['kind'] == 'region']
@@ -222,14 +258,6 @@ class QLabelDemo(QMainWindow):
 
     @require_image
     def get_centers_file(self):
-        self.origin = None
-        self.centers = Centers()
-        self.colors = {0: False, 1: False, 2: False}
-        self.current_region = None
-        self.regions = []
-        self.show_centers = True
-        self.center_colors = "normal"
-
         mypath = os.path.dirname(os.path.realpath(__file__))
         path = QFileDialog.getOpenFileName(
             self,
@@ -241,10 +269,18 @@ class QLabelDemo(QMainWindow):
             values = data[data['kind'] == 'center'].query("distance > 0")
             for _, row in values.iterrows():
                 self.centers[row.x, row.y] = Center(row.x, row.y, (row.red, row.green, row.blue), row.region)
+            self.regions = []
+            self.current_region = None
             self.make_regions(data)
         except Exception as err:
             error_msg(f"Failed to load file\n\n{path}\n\nError message:\n\n{err}")
             return
+
+        self.origin = None
+        self.centers = Centers()
+        self.colors = {0: False, 1: False, 2: False}
+        self.show_centers = [1, 2, 3]
+        self.center_colors = "normal"
 
         if not self.centers.are_in_img(self.channels[0].shape):
             self.centers.clear()
@@ -437,6 +473,7 @@ class QLabelDemo(QMainWindow):
         return super().eventFilter(source, event)
 
     def keyPressEvent(self, event):
+        modifiers = QApplication.keyboardModifiers()
         if event.key() == Qt.Key_R or event.key() == Qt.Key_1:
             self.mouse_colors[0].setChecked(not self.mouse_colors[0].isChecked())
         elif event.key() == Qt.Key_G or event.key() == Qt.Key_2:
@@ -446,14 +483,20 @@ class QLabelDemo(QMainWindow):
         elif event.key() == Qt.Key_A:
             self.show_channels[0].setChecked(not self.show_channels[0].isChecked())
         elif event.key() == Qt.Key_S:
-            self.show_channels[1].setChecked(not self.show_channels[1].isChecked())
+            if modifiers == Qt.ControlModifier:
+                self.show_center_checkboxes[1].setChecked(not self.show_center_checkboxes[1].isChecked())
+            else:
+                self.show_channels[1].setChecked(not self.show_channels[1].isChecked())
         elif event.key() == Qt.Key_D:
-            self.show_channels[2].setChecked(not self.show_channels[2].isChecked())
+            if modifiers == Qt.ControlModifier:
+                self.show_center_checkboxes[2].setChecked(not self.show_center_checkboxes[2].isChecked())
+            else:
+                self.show_channels[2].setChecked(not self.show_channels[2].isChecked())
         elif event.key() == Qt.Key_F:
-            self.show_channels[3].setChecked(not self.show_channels[3].isChecked())
-        elif event.key() == Qt.Key_Space:
-            self.show_centers = not self.show_centers
-            self.label.update_image()
+            if modifiers == Qt.ControlModifier:
+                self.show_center_checkboxes[3].setChecked(not self.show_center_checkboxes[3].isChecked())
+            else:
+                self.show_channels[3].setChecked(not self.show_channels[3].isChecked())
         elif event.key() == Qt.Key_Enter or event.key() == Qt.Key_Return:
             if self.center_colors == "normal":
                 self.center_colors = "black"

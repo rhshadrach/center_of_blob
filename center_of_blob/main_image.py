@@ -81,10 +81,11 @@ class ScrollLabel(QScrollArea):
             self._cache = parent.channels.as_rgb(parent.visible_channels())
         arr = self._cache.copy()
 
-        if parent.show_centers:
+        if len(parent.show_centers) > 0:
+            center_size = parent.center_size_slider.value()
             color = None if parent.center_colors == "normal" else (0, 0, 0)
             border_color = (255, 255, 255) if parent.center_colors == "normal" else (0, 0, 0)
-            analyze.highlight_points_dict(arr, parent.centers, color, border_color)
+            analyze.highlight_points_dict(arr, parent.centers, parent.show_centers, center_size, color, border_color)
         if parent.origin is not None:
             analyze.highlight_point(arr, parent.origin, color=(255, 255, 0))
 
