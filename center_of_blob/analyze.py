@@ -68,13 +68,20 @@ def highlight_points(data, points, color):
         highlight_point(data, point, color)
 
 
-def highlight_points_dict(data, centers, color=None, border_color=(255, 255, 255)):
+def highlight_points_dict(data, centers, show_centers, center_size, color=None, border_color=(255, 255, 255)):
     for (x, y), center in centers.items():
+        show = False
+        for channel in show_centers:
+            if center.color[channel-1] > 0:
+                show = True
+                break
+        if not show:
+            continue
         if color is None:
             c = center.color
         else:
             c = color
-        highlight_point(data, (x, y), c, border_color)
+        highlight_point(data, (x, y), c, center_size, border_color)
 
 
 def highlight_line_segments(data, points, color):
@@ -112,10 +119,10 @@ def draw_line(mat, x0, y0, x1, y1, color):
     mat[x, y] = color
 
 
-def highlight_point(data, point, color=(255, 255, 255), border_color=(255, 255, 255)):
+def highlight_point(data, point, color=(255, 255, 255), center_size=5, border_color=(255, 255, 255)):
     xx, yy = point
-    for k in range(5):
-        for l in range(5):
+    for k in range(center_size):
+        for l in range(center_size):
             data[xx + k, yy + l] = color
             data[xx + k, yy - l] = color
             data[xx - k, yy + l] = color
@@ -125,9 +132,10 @@ def highlight_point(data, point, color=(255, 255, 255), border_color=(255, 255, 
             data[xx + l, yy - k] = color
             data[xx - l, yy - k] = color
 
-    for k in range(7):
-        for l in range(7):
-            if k < 5 and l < 5:
+    border_size = 2 if center_size > 4 else 1
+    for k in range(center_size+border_size):
+        for l in range(center_size+border_size):
+            if k < center_size and l < center_size:
                 continue
             data[xx + k, yy + l] = border_color
             data[xx + k, yy - l] = border_color

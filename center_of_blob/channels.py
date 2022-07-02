@@ -20,20 +20,33 @@ class Channels:
         self._channels = []
         self._channel_cache = {}
 
-    def load_image(self, filename: str):
+    def load_image(self, filename: str) -> bool:
+        """Return is whether to disable channel 0"""
         self.filename = filename
         self.img = Image.open(self.filename)
         self.arr = np.asarray(self.img)
         self._channels = []
 
-        self.img.seek(0)
-        self._channels.append(np.asarray(self.img))
-        self.img.seek(1)
-        self._channels.append(np.asarray(self.img))
-        self.img.seek(2)
-        self._channels.append(np.asarray(self.img))
-        self.img.seek(3)
-        self._channels.append(np.asarray(self.img))
+        if self.img.n_frames == 3:
+            self.img.seek(0)
+            self._channels.append(np.asarray(self.img))
+            self.img.seek(0)
+            self._channels.append(np.asarray(self.img))
+            self.img.seek(1)
+            self._channels.append(np.asarray(self.img))
+            self.img.seek(2)
+            self._channels.append(np.asarray(self.img))
+            return True
+        else:
+            self.img.seek(0)
+            self._channels.append(np.asarray(self.img))
+            self.img.seek(1)
+            self._channels.append(np.asarray(self.img))
+            self.img.seek(2)
+            self._channels.append(np.asarray(self.img))
+            self.img.seek(3)
+            self._channels.append(np.asarray(self.img))
+            return False
 
     def set_brightness(self, channel, low, high):
         channel = self._funnel_channel(channel)
