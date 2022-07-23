@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QMessageBox, QAction
+from PyQt5.QtWidgets import QMessageBox, QAction, QFileDialog
 from PyQt5.QtGui import QIcon
 
 from center_of_blob import __version__
@@ -20,3 +20,25 @@ def about_dialog():
     msgBox.setWindowTitle("About")
     msgBox.setStandardButtons(QMessageBox.Ok)
     msgBox.exec()
+
+
+class ImageNameDialog(QFileDialog):
+    @classmethod
+    def getOpenFileName(cls, parent, default_dir):
+        result = super().getOpenFileName(
+            parent,
+            'Open Image File',
+            default_dir,
+        )
+        return result[0]
+
+
+class CentersFileDialog(QFileDialog):
+    @classmethod
+    def getOpenFileName(cls, parent, default_dir):
+        result = super().getOpenFileName(
+            parent,
+            'Open Centers File',
+            default_dir,
+        )
+        return result[0]

@@ -181,10 +181,6 @@ class QLabelDemo(QMainWindow):
         self.label.invalidate_cache()
         self.label.update_image()
 
-    # @require_image
-    # def zoom(self, how: Literal['in', 'out']) -> None:
-    #     self.label.zoom(how)
-
     def update_channels(self):
         self.label.invalidate_cache()
         self.label.update_image()
@@ -224,11 +220,8 @@ class QLabelDemo(QMainWindow):
         self.center_colors = "normal"
 
         mypath = os.path.dirname(os.path.realpath(__file__))
-        path = QFileDialog.getOpenFileName(
-            self,
-            'Open Image File',
-            mypath,
-        )[0]
+        from center_of_blob.popups import ImageNameDialog
+        path = ImageNameDialog.getOpenFileName(self, mypath)
         try:
             disable_channel_0 = self.channels.load_image(path)
         except Exception as err:
@@ -259,16 +252,14 @@ class QLabelDemo(QMainWindow):
     @require_image
     def get_centers_file(self):
         mypath = os.path.dirname(os.path.realpath(__file__))
-        path = QFileDialog.getOpenFileName(
-            self,
-            'Open Centers File',
-            mypath,
-        )[0]
+        from center_of_blob.popups import CentersFileDialog
+        path = CentersFileDialog.getOpenFileName(self, mypath)
         try:
             data = pd.read_csv(path)
             values = data[data['kind'] == 'center'].query("distance > 0")
+            new_centers = Centers()
             for _, row in values.iterrows():
-                self.centers[row.x, row.y] = Center(row.x, row.y, (row.red, row.green, row.blue), row.region)
+                new_centers[row.x, row.y] = Center(row.x, row.y, (row.red, row.green, row.blue), row.region)
             self.regions = []
             self.current_region = None
             self.make_regions(data)
@@ -277,7 +268,7 @@ class QLabelDemo(QMainWindow):
             return
 
         self.origin = None
-        self.centers = Centers()
+        self.centers = new_centers
         self.colors = {0: False, 1: False, 2: False}
         self.show_centers = [1, 2, 3]
         self.center_colors = "normal"
@@ -505,6 +496,15 @@ class QLabelDemo(QMainWindow):
             self.label.update_image()
         elif event.key() == Qt.Key_T:
             self.enable_tooltip = not self.enable_tooltip
+        elif event.key() == Qt.Key_Question:
+            print('*'*20, '  Debug Information  ', '*'*20)
+            print('Centers:')
+            for k, ((x, y), center) in enumerate(self.centers.items()):
+                print(f'  Center {k}:')
+                print(f'    Coordinates:', (x, y))
+                print(f'    Color:', center.color)
+                print(f'    Region:', center.region)
+            print('*' * 20, '  End Debug Information  ', '*' * 20)
         event.accept()
 
     @require_image
