@@ -220,11 +220,8 @@ class QLabelDemo(QMainWindow):
         self.center_colors = "normal"
 
         mypath = os.path.dirname(os.path.realpath(__file__))
-        path = QFileDialog.getOpenFileName(
-            self,
-            'Open Image File',
-            mypath,
-        )[0]
+        from center_of_blob.popups import ImageNameDialog
+        path = ImageNameDialog.getOpenFileName(self, mypath)
         try:
             disable_channel_0 = self.channels.load_image(path)
         except Exception as err:
@@ -255,11 +252,8 @@ class QLabelDemo(QMainWindow):
     @require_image
     def get_centers_file(self):
         mypath = os.path.dirname(os.path.realpath(__file__))
-        path = QFileDialog.getOpenFileName(
-            self,
-            'Open Centers File',
-            mypath,
-        )[0]
+        from center_of_blob.popups import CentersFileDialog
+        path = CentersFileDialog.getOpenFileName(self, mypath)
         try:
             data = pd.read_csv(path)
             values = data[data['kind'] == 'center'].query("distance > 0")
