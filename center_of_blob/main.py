@@ -502,7 +502,6 @@ class QLabelDemo(QMainWindow):
             self.label.update_image()
         elif event.key() == Qt.Key_T:
             self.enable_tooltip = not self.enable_tooltip
-        # elif event.key() == Qt.Key_Slash and modifiers == Qt.ShiftModifier:
         elif event.key() == Qt.Key_Question:
             print('*'*20, '  Debug Information  ', '*'*20)
             print('Centers:')
@@ -512,8 +511,6 @@ class QLabelDemo(QMainWindow):
                 print(f'    Color:', center.color)
                 print(f'    Region:', center.region)
             print('*' * 20, '  End Debug Information  ', '*' * 20)
-
-
         event.accept()
 
     @require_image
