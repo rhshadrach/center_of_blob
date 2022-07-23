@@ -31,11 +31,12 @@ class Channels:
             self.img.seek(0)
             self._channels.append(np.asarray(self.img))
             self.img.seek(0)
-            self._channels.append(np.asarray(self.img))
+            green = np.asarray(self.img)
             self.img.seek(1)
-            self._channels.append(np.asarray(self.img))
+            blue = np.asarray(self.img)
             self.img.seek(2)
-            self._channels.append(np.asarray(self.img))
+            red = np.asarray(self.img)
+            self._channels = [red, red, green, blue]
             return True
         else:
             self.img.seek(0)
@@ -110,9 +111,12 @@ class Channels:
         channels = sorted(self._funnel_channel(channel) for channel in channels)
         result = None
 
+        if len(channels) == 0:
+            return np.zeros((*self._channels[0].shape, 3))
+
         if channels != [0]:
             result = sum(self._make_channel_data(c) for c in range(1, 4) if c in channels)
-        if 0 in channels or len(channels) == 0:
+        if 0 in channels: #  or len(channels) == 0:
             channel0 = self._make_channel_data(0)
             if result is None:
                 result = channel0
