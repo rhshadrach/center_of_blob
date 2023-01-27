@@ -15,7 +15,7 @@ class Centers(dict):
         return closest
 
     def are_in_img(self, shape: tuple[int, int]) -> bool:
-        return all(0 <= x < shape[1] and 0 <= y < shape[0] for x, y in self)
+        return all(0 <= x < shape[0] and 0 <= y < shape[1] for x, y in self)
 
 
 @dataclass

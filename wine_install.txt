@@ -1,0 +1,6 @@
+Install wine version 8.0
+wine winecfg # Make sure this is set to Windows 8.1
+# Install Python38 to C:/Python38; configure for all users, add environment variables, add to path
+wine C:/Python38/python.exe -m pip install --upgrade pip
+wine C:/Python38/python.exe -m pip install -r requirements.txt
+wine C:/Python38/python.exe -m pip install pyinstaller==3.6

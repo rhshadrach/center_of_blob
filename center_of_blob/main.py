@@ -238,6 +238,8 @@ class QLabelDemo(QMainWindow):
             else:
                 self.show_channels[0].setDisabled(False)
                 self.brightness[0].setDisabled(False)
+            self.label._cache = None
+            self.label.update_image()
 
     def make_regions(self, data):
         data = data[data['kind'] == 'region']
@@ -273,7 +275,9 @@ class QLabelDemo(QMainWindow):
         self.show_centers = [1, 2, 3]
         self.center_colors = "normal"
 
-        if not self.centers.are_in_img(self.channels[0].shape):
+        print('Shape:', self.channels[1].shape)
+
+        if not self.centers.are_in_img(self.channels[1].shape):
             self.centers.clear()
             error_msg("Centers file has points outside of image bounds. Refusing file.")
             return
