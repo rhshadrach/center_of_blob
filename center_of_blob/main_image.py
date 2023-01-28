@@ -1,3 +1,4 @@
+from __future__ import annotations
 from PyQt5.QtWidgets import QScrollArea, QLabel, QScroller
 from PyQt5.QtCore import QEvent
 from typing import Literal

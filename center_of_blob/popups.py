@@ -1,3 +1,4 @@
+from __future__ import annotations
 from PyQt5.QtWidgets import QMessageBox, QAction, QFileDialog
 from PyQt5.QtGui import QIcon
 

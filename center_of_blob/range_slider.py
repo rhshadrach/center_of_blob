@@ -1,3 +1,4 @@
+from __future__ import annotations
 import sys, os
 from PyQt5 import QtCore, QtGui, QtWidgets
 
