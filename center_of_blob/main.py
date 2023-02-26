@@ -3,6 +3,8 @@ import sys
 import os
 import functools as ft
 from typing import Literal
+from pathlib import Path
+
 from PyQt5.QtWidgets import QMainWindow, QApplication, QAction, QWidget, QPushButton, QGridLayout, QToolBar, QCheckBox, QFileDialog, QSlider, QMessageBox, QLineEdit
 from PyQt5.QtGui import QIntValidator
 from PyQt5 import QtCore
@@ -17,7 +19,7 @@ from center_of_blob.analyze import identify_centers
 from center_of_blob.main_image import ScrollLabel
 from center_of_blob.channels import Channels, N_CHANNELS
 from center_of_blob.centers import Centers, Center
-from center_of_blob.popups import error_msg, about_dialog
+from center_of_blob.popups import error_msg, about_dialog, CsvNameDialog, info_dialog, ImageNameDialog, shortcuts_dialog
 from center_of_blob.boxed_range_slider import BoxedRangeSlider
 from center_of_blob.region import Region
 
@@ -76,17 +78,9 @@ class QLabelDemo(QMainWindow):
         self.draw_region.clicked.connect(lambda: self.activate_drawing_region())
         self.button_states['drawing_region'] = self.draw_region
 
-        # self.zoom_in = QPushButton('Zoom in', self)
-        # self.zoom_in.resize(150, 50)
-        # self.zoom_in.clicked.connect(lambda: self.zoom('in'))
-        #
-        # self.zoom_out = QPushButton('Zoom out', self)
-        # self.zoom_out.resize(150, 50)
-        # self.zoom_out.clicked.connect(lambda: self.zoom('out'))
-
-        write_csv = QPushButton('Write CSV', self)
-        write_csv.resize(150, 50)
-        write_csv.clicked.connect(lambda: self.write_csv())
+        self.write_csv_button = QPushButton('Write CSV', self)
+        self.write_csv_button.resize(150, 50)
+        self.write_csv_button.clicked.connect(lambda: self.write_csv())
 
         self.mouse_colors = []
         for k in range(1, N_CHANNELS):
@@ -115,13 +109,11 @@ class QLabelDemo(QMainWindow):
         for k in range(N_CHANNELS):
             slider = BoxedRangeSlider(0, 255)
             slider.setMinimumHeight(30)
-            # slider.sliderMoved.connect(lambda _, _2, k=k: self.update_brightness_boxes(k))
             slider.slider.valueChanged.connect(self.update_brightness)
             self.brightness.append(slider)
 
         self.label = ScrollLabel(self)
         self.label.label.setMouseTracking(True)
-        # self.label.viewport().installEventFilter(self)
 
         self.zoom = QSlider(QtCore.Qt.Horizontal)
         self.zoom.setMinimum(100)
@@ -139,7 +131,7 @@ class QLabelDemo(QMainWindow):
         layout = QGridLayout()
         layout.addWidget(self.img_path_button, 0, 0)
         layout.addWidget(self.centers_path_button, 0, 1)
-        layout.addWidget(write_csv, 0, 2)
+        layout.addWidget(self.write_csv_button, 0, 2)
         layout.addWidget(self.set_origin_button, 1, 0)
         layout.addWidget(self.modify_centers, 1, 1)
         layout.addWidget(self.draw_region, 1, 2)
@@ -162,16 +154,31 @@ class QLabelDemo(QMainWindow):
 
         main.setLayout(layout)
 
-        self.setWindowTitle('Center of Blob')
+        self.setWindowTitle('Center of Blob - No File Loaded')
         self.label.label.installEventFilter(self)
 
         self.setGeometry(100, 100, 500, 400)
 
         menubar = self.menuBar()
         help = menubar.addMenu("Help")
+
+        show_info = QAction("Info", self)
+        show_info.setObjectName("action_show_info")
+        show_info.triggered.connect(lambda: info_dialog(self))
+
+        show_shortcuts = QAction("Shortcuts", self)
+        show_shortcuts.setObjectName("action_show_shortcuts")
+        show_shortcuts.triggered.connect(lambda: shortcuts_dialog(self))
+
         show_about = QAction('About', self)
+        show_about.setObjectName("action_show_about")
         show_about.triggered.connect(about_dialog)
+
+        help.addAction(show_info)
+        help.addAction(show_shortcuts)
         help.addAction(show_about)
+
+        self.showMaximized()
 
     @require_image
     def update_zoom(self):
@@ -208,29 +215,22 @@ class QLabelDemo(QMainWindow):
             self.colors[k] = checkbox.isChecked()
 
     def get_img_file(self):
-        self.state = 'none'
-        self.origin = None
-        self.channels = Channels()
-        self.filename = None
-        self.centers = Centers()
-        self.has_img = False
-        self.colors = {0: False, 1: False, 2: False}
-        self.current_region = None
-        self.regions = []
-        self.show_centers = [1, 2, 3]
-        self.center_colors = "normal"
-
-        mypath = os.path.dirname(os.path.realpath(__file__))
-        from center_of_blob.popups import ImageNameDialog
-        path = ImageNameDialog.getOpenFileName(self, mypath)
+        mypath = str(Path(__file__).resolve())
+        path = Path(ImageNameDialog.getOpenFileName(self, mypath)).resolve()
         try:
-            disable_channel_0 = self.channels.load_image(path)
+            # TODO: load_image resets channel state.. bad design
+            disable_channel_0 = self.channels.load_image(str(path))
         except Exception as err:
             error_msg(f"Failed to load file\n\n{path}\n\nError message:\n\n{err}")
         else:
+            self.state = 'none'
+            self.center_colors = "normal"
+            self.show_centers = [1, 2, 3]
             self.has_img = True
-            self.filename = path
+            self.filename = str(path)
+            self.setWindowTitle(f'Center of Blob - {path.parts[-1]}')
             self.centers.clear()
+            self.origin = None
             self.label.reset_image()
             if disable_channel_0:
                 self.show_channels[0].setChecked(False)
@@ -240,6 +240,9 @@ class QLabelDemo(QMainWindow):
                 self.show_channels[0].setDisabled(False)
                 self.brightness[0].setDisabled(False)
             self.label._cache = None
+            self.current_region = None
+            self.regions = []
+            self.colors = {0: False, 1: False, 2: False}
             self.label.update_image()
 
     def make_regions(self, data):
@@ -275,8 +278,6 @@ class QLabelDemo(QMainWindow):
         self.colors = {0: False, 1: False, 2: False}
         self.show_centers = [1, 2, 3]
         self.center_colors = "normal"
-
-        print('Shape:', self.channels[1].shape)
 
         if not self.centers.are_in_img(self.channels[1].shape):
             self.centers.clear()
@@ -573,7 +574,7 @@ class QLabelDemo(QMainWindow):
             for point in region.points:
                 data.append(['region', *point, -1, 255, 69, 0, region.name])
         suggested_filename = f"{os.path.splitext(self.filename)[0]}.csv"
-        name = QFileDialog.getSaveFileName(self, 'Save File', suggested_filename)[0]
+        name = CsvNameDialog.getSaveFileName(self, suggested_filename)
 
         pd.DataFrame(
             data,

@@ -23,32 +23,40 @@ class Channels:
 
     def load_image(self, filename: str) -> bool:
         """Return is whether to disable channel 0"""
-        self.filename = filename
-        self.img = Image.open(self.filename)
-        self.arr = np.asarray(self.img)
-        self._channels = []
+        img = Image.open(filename)
+        arr = np.asarray(img)
 
-        if self.img.n_frames == 3:
-            self.img.seek(0)
-            self._channels.append(np.asarray(self.img))
-            self.img.seek(0)
-            green = np.asarray(self.img)
-            self.img.seek(1)
-            blue = np.asarray(self.img)
-            self.img.seek(2)
-            red = np.asarray(self.img)
-            self._channels = [red, red, green, blue]
-            return True
+        channels = []
+        if img.n_frames == 3:
+            img.seek(0)
+            channels.append(np.asarray(img))
+            img.seek(0)
+            green = np.asarray(img)
+            img.seek(1)
+            blue = np.asarray(img)
+            img.seek(2)
+            red = np.asarray(img)
+            channels = [red, red, green, blue]
+            result = True
         else:
-            self.img.seek(0)
-            self._channels.append(np.asarray(self.img))
-            self.img.seek(1)
-            self._channels.append(np.asarray(self.img))
-            self.img.seek(2)
-            self._channels.append(np.asarray(self.img))
-            self.img.seek(3)
-            self._channels.append(np.asarray(self.img))
-            return False
+            img.seek(0)
+            channels.append(np.asarray(img))
+            img.seek(1)
+            channels.append(np.asarray(img))
+            img.seek(2)
+            channels.append(np.asarray(img))
+            img.seek(3)
+            channels.append(np.asarray(img))
+            result = False
+
+        # Only modify state upon success
+        self.filename = filename
+        self.img = img
+        self.arr = arr
+        self._channels = channels
+        self._channel_cache = {}
+
+        return result
 
     def set_brightness(self, channel, low, high):
         channel = self._funnel_channel(channel)
@@ -86,7 +94,7 @@ class Channels:
     def invalidate_channel_cache(self, channel: Optional[int]):
         if channel is None:
             self._channel_cache = {}
-        else:
+        elif channel in self._channel_cache:
             del self._channel_cache[channel]
 
     def _make_channel_data(self, channel):
