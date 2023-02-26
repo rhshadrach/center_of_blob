@@ -1,4 +1,5 @@
-import sys, os
+from __future__ import annotations
+
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 
@@ -41,6 +42,7 @@ class RangeSlider(QtWidgets.QSlider):
 
     def setLow(self, low: int):
         self._low = low
+        self.valueChanged.emit(self._low, self._high)
         self.update()
 
     def high(self):
@@ -48,6 +50,7 @@ class RangeSlider(QtWidgets.QSlider):
 
     def setHigh(self, high):
         self._high = high
+        self.valueChanged.emit(self._low, self._high)
         self.update()
 
     def paintEvent(self, event):

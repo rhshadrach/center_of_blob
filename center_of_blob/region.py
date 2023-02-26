@@ -1,3 +1,4 @@
+from __future__ import annotations
 from shapely.geometry import Point
 from shapely.geometry.polygon import Polygon
 
