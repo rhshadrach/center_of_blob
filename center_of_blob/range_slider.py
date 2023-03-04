@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-
 # Originated from
 # https://www.mail-archive.com/pyqt@riverbankcomputing.com/msg22889.html
-# Modification refered from
+# Modification referred from
 # https://gist.github.com/Riateche/27e36977f7d5ea72cf4f
+
 
 class RangeSlider(QtWidgets.QSlider):
     sliderMoved = QtCore.pyqtSignal(int, int)
@@ -18,12 +18,12 @@ class RangeSlider(QtWidgets.QSlider):
         maximum and minimum, as is a normal slider, but instead of having a
         single slider value, there are 2 slider values.
 
-        This class emits the same signals as the QSlider base class, with the 
+        This class emits the same signals as the QSlider base class, with the
         exception of valueChanged
     """
 
     def __init__(self, *args):
-        super(RangeSlider, self).__init__(*args)
+        super().__init__(*args)
 
         self._low = self.minimum()
         self._high = self.maximum()
@@ -68,7 +68,9 @@ class RangeSlider(QtWidgets.QSlider):
         if self.tickPosition() != self.NoTicks:
             opt.subControls |= QtWidgets.QStyle.SC_SliderTickmarks
         style.drawComplexControl(QtWidgets.QStyle.CC_Slider, opt, painter, self)
-        groove = style.subControlRect(QtWidgets.QStyle.CC_Slider, opt, QtWidgets.QStyle.SC_SliderGroove, self)
+        groove = style.subControlRect(
+            QtWidgets.QStyle.CC_Slider, opt, QtWidgets.QStyle.SC_SliderGroove, self
+        )
 
         # drawSpan
         # opt = QtWidgets.QStyleOptionSlider()
@@ -78,9 +80,13 @@ class RangeSlider(QtWidgets.QSlider):
         #    opt.subControls |= QtWidgets.QStyle.SC_SliderTickmarks
         opt.siderValue = 0
         opt.sliderPosition = self._low
-        low_rect = style.subControlRect(QtWidgets.QStyle.CC_Slider, opt, QtWidgets.QStyle.SC_SliderHandle, self)
+        low_rect = style.subControlRect(
+            QtWidgets.QStyle.CC_Slider, opt, QtWidgets.QStyle.SC_SliderHandle, self
+        )
         opt.sliderPosition = self._high
-        high_rect = style.subControlRect(QtWidgets.QStyle.CC_Slider, opt, QtWidgets.QStyle.SC_SliderHandle, self)
+        high_rect = style.subControlRect(
+            QtWidgets.QStyle.CC_Slider, opt, QtWidgets.QStyle.SC_SliderHandle, self
+        )
 
         low_pos = self.__pick(low_rect.center())
         high_pos = self.__pick(high_rect.center())
@@ -90,9 +96,13 @@ class RangeSlider(QtWidgets.QSlider):
 
         c = QtCore.QRect(low_rect.center(), high_rect.center()).center()
         if opt.orientation == QtCore.Qt.Horizontal:
-            span_rect = QtCore.QRect(QtCore.QPoint(min_pos, c.y() - 2), QtCore.QPoint(max_pos, c.y() + 1))
+            span_rect = QtCore.QRect(
+                QtCore.QPoint(min_pos, c.y() - 2), QtCore.QPoint(max_pos, c.y() + 1)
+            )
         else:
-            span_rect = QtCore.QRect(QtCore.QPoint(c.x() - 2, min_pos), QtCore.QPoint(c.x() + 1, max_pos))
+            span_rect = QtCore.QRect(
+                QtCore.QPoint(c.x() - 2, min_pos), QtCore.QPoint(c.x() + 1, max_pos)
+            )
 
         # self.initStyleOption(opt)
         if opt.orientation == QtCore.Qt.Horizontal:
@@ -100,20 +110,10 @@ class RangeSlider(QtWidgets.QSlider):
         else:
             groove.adjust(0, 0, 0, -1)
 
-        if True:  # self.isEnabled():
-            highlight = self.palette().color(QtGui.QPalette.Highlight)
-            painter.setBrush(QtGui.QBrush(highlight))
-            painter.setPen(QtGui.QPen(highlight, 0))
-            # painter.setPen(QtGui.QPen(self.palette().color(QtGui.QPalette.Dark), 0))
-            '''
-            if opt.orientation == QtCore.Qt.Horizontal:
-                self.setupPainter(painter, opt.orientation, groove.center().x(), groove.top(), groove.center().x(), groove.bottom())
-            else:
-                self.setupPainter(painter, opt.orientation, groove.left(), groove.center().y(), groove.right(), groove.center().y())
-            '''
-            # spanRect =
-            painter.drawRect(span_rect.intersected(groove))
-            # painter.drawRect(groove)
+        highlight = self.palette().color(QtGui.QPalette.Highlight)
+        painter.setBrush(QtGui.QBrush(highlight))
+        painter.setPen(QtGui.QPen(highlight, 0))
+        painter.drawRect(span_rect.intersected(groove))
 
         for i, value in enumerate([self._low, self._high]):
             opt = QtWidgets.QStyleOptionSlider()
@@ -122,7 +122,9 @@ class RangeSlider(QtWidgets.QSlider):
             # Only draw the groove for the first slider so it doesn't get drawn
             # on top of the existing ones every time
             if i == 0:
-                opt.subControls = QtWidgets.QStyle.SC_SliderHandle  # | QtWidgets.QStyle.SC_SliderGroove
+                opt.subControls = (
+                    QtWidgets.QStyle.SC_SliderHandle
+                )  # | QtWidgets.QStyle.SC_SliderGroove
             else:
                 opt.subControls = QtWidgets.QStyle.SC_SliderHandle
 
@@ -158,7 +160,9 @@ class RangeSlider(QtWidgets.QSlider):
 
             for i, value in enumerate([self._low, self._high]):
                 opt.sliderPosition = value
-                hit = style.hitTestComplexControl(style.CC_Slider, opt, event.pos(), self)
+                hit = style.hitTestComplexControl(
+                    style.CC_Slider, opt, event.pos(), self
+                )
                 if hit == style.SC_SliderHandle:
                     self.active_slider = i
                     self.pressed_control = hit
@@ -170,7 +174,9 @@ class RangeSlider(QtWidgets.QSlider):
 
             if self.active_slider < 0:
                 self.pressed_control = QtWidgets.QStyle.SC_SliderHandle
-                self.click_offset = self.__pixelPosToRangeValue(self.__pick(event.pos()))
+                self.click_offset = self.__pixelPosToRangeValue(
+                    self.__pick(event.pos())
+                )
                 self.triggerAction(self.SliderMove)
                 self.setRepeatAction(self.SliderNoAction)
         else:
@@ -243,6 +249,10 @@ class RangeSlider(QtWidgets.QSlider):
             slider_min = gr.y()
             slider_max = gr.bottom() - slider_length + 1
 
-        return style.sliderValueFromPosition(self.minimum(), self.maximum(),
-                                             pos - slider_min, slider_max - slider_min,
-                                             opt.upsideDown)
+        return style.sliderValueFromPosition(
+            self.minimum(),
+            self.maximum(),
+            pos - slider_min,
+            slider_max - slider_min,
+            opt.upsideDown,
+        )

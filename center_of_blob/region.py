@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from shapely.geometry import Point
 from shapely.geometry.polygon import Polygon
 
@@ -7,7 +8,7 @@ class Region:
     def __init__(self):
         self.points = []
         self.polygon = None
-        self.name = 'Unnamed'
+        self.name = "Unnamed"
 
     def add_point(self, point):
         self.points.append(point)
@@ -32,7 +33,9 @@ class Region:
                 closest = x2, y2
                 shortest_distance = distance
 
-        if shortest_distance is None or (radius is not None and shortest_distance > radius * radius):
+        if shortest_distance is None or (
+            radius is not None and shortest_distance > radius * radius
+        ):
             return False
         return True
 

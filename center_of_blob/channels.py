@@ -1,17 +1,18 @@
 from __future__ import annotations
-from typing import Literal, Iterable, Optional
+
+from typing import Iterable, Literal
 
 import numpy as np
 from PIL import Image
 
-ChannelT = int | Literal['base', 'r', 'g', 'b']
+ChannelT = int | Literal["base", "r", "g", "b"]
 N_CHANNELS = 4
 
 
 class Channels:
     def __init__(self):
         # TODO: Can this depend on the file?
-        self._mapper = {'base': 0, 'r': 1, 'g': 2, 'b': 3}
+        self._mapper = {"base": 0, "r": 1, "g": 2, "b": 3}
         self.filename = None
         self.img = None
         self.arr = None
@@ -91,7 +92,7 @@ class Channels:
     def __len__(self) -> int:
         return len(self._channels)
 
-    def invalidate_channel_cache(self, channel: Optional[int]):
+    def invalidate_channel_cache(self, channel: int | None):
         if channel is None:
             self._channel_cache = {}
         elif channel in self._channel_cache:
@@ -104,9 +105,9 @@ class Channels:
         data = self._channels[channel]
         if low > 0 or high < 255:
             data = self.clip_data(data, low, high)
-        filler = np.zeros_like(data, dtype='uint8')
+        filler = np.zeros_like(data, dtype="uint8")
         # TODO: Do we need to cast here?
-        data = data.astype('uint8')
+        data = data.astype("uint8")
         if channel != 0:
             buffer = [filler if k != channel else data for k in range(1, 4)]
         else:
@@ -124,8 +125,10 @@ class Channels:
             return np.zeros((*self._channels[0].shape, 3))
 
         if channels != [0]:
-            result = sum(self._make_channel_data(c) for c in range(1, 4) if c in channels)
-        if 0 in channels: #  or len(channels) == 0:
+            result = sum(
+                self._make_channel_data(c) for c in range(1, 4) if c in channels
+            )
+        if 0 in channels:  #  or len(channels) == 0:
             channel0 = self._make_channel_data(0)
             if result is None:
                 result = channel0
@@ -170,5 +173,5 @@ class Channels:
         for channel in range(1, len(self._channels)):
             if channel not in channels:
                 continue
-            buffer[channel-1] = 255
+            buffer[channel - 1] = 255
         return tuple(buffer)

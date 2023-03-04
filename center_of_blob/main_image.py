@@ -1,11 +1,8 @@
 from __future__ import annotations
-from PyQt5.QtWidgets import QScrollArea, QLabel, QScroller
-from PyQt5.QtCore import QEvent
-from typing import Literal
-from PyQt5 import QtGui
-from PyQt5.QtCore import Qt
-from PyQt5 import QtCore
-from PyQt5.QtWidgets import QApplication
+
+from PyQt5 import QtCore, QtGui
+from PyQt5.QtCore import QEvent, Qt
+from PyQt5.QtWidgets import QApplication, QLabel, QScrollArea, QScroller
 
 from center_of_blob import analyze
 
@@ -48,7 +45,6 @@ class ScrollLabel(QScrollArea):
             self._orig_height = self._height
 
     def zoom(self, factor: float):
-
         self._height = int(factor * self._orig_height)
         self.update_image()
 
@@ -85,8 +81,17 @@ class ScrollLabel(QScrollArea):
         if len(parent.show_centers) > 0:
             center_size = parent.center_size_slider.value()
             color = None if parent.center_colors == "normal" else (0, 0, 0)
-            border_color = (255, 255, 255) if parent.center_colors == "normal" else (0, 0, 0)
-            analyze.highlight_points_dict(arr, parent.centers, parent.show_centers, center_size, color, border_color)
+            border_color = (
+                (255, 255, 255) if parent.center_colors == "normal" else (0, 0, 0)
+            )
+            analyze.highlight_points_dict(
+                arr,
+                parent.centers,
+                parent.show_centers,
+                center_size,
+                color,
+                border_color,
+            )
         if parent.origin is not None:
             analyze.highlight_point(arr, parent.origin, color=(255, 255, 0))
 
@@ -96,11 +101,15 @@ class ScrollLabel(QScrollArea):
 
         if parent.current_region is not None:
             analyze.highlight_points(arr, parent.current_region.points, (240, 50, 230))
-            analyze.highlight_line_segments(arr, parent.current_region.points, (240, 50, 230))
+            analyze.highlight_line_segments(
+                arr, parent.current_region.points, (240, 50, 230)
+            )
 
         height, width, channel = arr.shape
         bytes_per_line = 3 * width
-        new_image = QtGui.QImage(arr, width, height, bytes_per_line, QtGui.QImage.Format_RGB888)
+        new_image = QtGui.QImage(
+            arr, width, height, bytes_per_line, QtGui.QImage.Format_RGB888
+        )
         new_pixmap = QtGui.QPixmap.fromImage(new_image)
 
         scaled_pixmap = new_pixmap.scaledToHeight(self._height)

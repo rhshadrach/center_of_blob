@@ -1,0 +1,56 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "center_of_blob"
+authors = [
+    {name = "Richard Shadrach", email = "rhshadrach@gmail.com"},
+]
+description = "Center of Blob"
+readme = "README.md"
+requires-python = ">=3.7"
+license = {text = "BSD-3-Clause"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+]
+dependencies = [
+    "imageio",
+    "matplotlib",
+    "numpy",
+    "pandas",
+    "pillow",
+    "pyinstaller",
+    "PyQt5",
+    "pytest",
+    "pytest-qt",
+    "scikit-image",
+    "scikit-learn",
+    "scipy",
+    "shapely",
+]
+dynamic = ["version"]
+
+[tool.setuptools.dynamic]
+version = {file = "center_of_blob/VERSION"}
+
+[project.optional-dependencies]
+lint = [
+    "black",
+    "codespell",
+    "flake8",
+    "isort",
+    "mypy",
+    "pylint",
+    "pyright",
+    "pyupgrade",
+    "ruff",
+    "vulture",
+]
+test = [
+    "pytest",
+]
+dev = ["center_of_blob[lint]"]
+
+[tool.isort]
+profile = "black"

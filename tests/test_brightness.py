@@ -1,5 +1,6 @@
-from tests import actions
 import pytest
+
+from tests import actions
 
 
 @pytest.mark.parametrize("channel", [0, 1, 2, 3])

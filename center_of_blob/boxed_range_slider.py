@@ -81,5 +81,3 @@ class BoxedRangeSlider(QtWidgets.QWidget):
     @property
     def valueChanged(self):
         return self.slider.valueChanged
-
-
