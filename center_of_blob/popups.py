@@ -1,5 +1,4 @@
 from __future__ import annotations
-from __future__ import annotations
 
 from PyQt5.QtWidgets import QFileDialog, QMessageBox
 
@@ -81,7 +80,7 @@ class CsvNameDialog(QFileDialog):
     def getSaveFileName(cls, parent, default_dir):
         result = super().getSaveFileName(
             parent,
-            'Choose CSV filename',
+            "Choose CSV filename",
             default_dir,
         )
         return result[0]
