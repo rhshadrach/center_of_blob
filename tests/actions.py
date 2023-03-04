@@ -1,11 +1,14 @@
 import contextlib
 import functools as ft
+from pathlib import Path
+import threading
 
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import QApplication, QMessageBox
+from PyQt5.QtWidgets import QMessageBox, QApplication
 
 from center_of_blob.main import QLabelDemo
-from center_of_blob.popups import CentersFileDialog, CsvNameDialog, ImageNameDialog
+from center_of_blob.popups import ImageNameDialog, CsvNameDialog, CentersFileDialog
+
 from tests import data
 
 
@@ -40,7 +43,7 @@ def save_csv(monkeypatch, qtbot, main, filename):
 
 
 def click_color_channel(qtbot, main, channel):
-    qtbot.mouseClick(main.mouse_colors[channel - 1], QtCore.Qt.LeftButton)
+    qtbot.mouseClick(main.mouse_colors[channel-1], QtCore.Qt.LeftButton)
 
 
 def click_modify_centers(qtbot, main):
