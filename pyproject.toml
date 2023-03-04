@@ -45,7 +45,7 @@ lint = [
     "vulture",
 ]
 build = ["pyinstaller"]
-test = ["pytest", "pytest-qt"]
+test = ["pytest", "pytest-qt", "pytest-xvfb"]
 dev = ["center_of_blob[lint, build, test]"]
 
 [tool.isort]
