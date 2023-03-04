@@ -1,7 +1,5 @@
 import contextlib
 import functools as ft
-import threading
-from pathlib import Path
 
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QApplication, QMessageBox

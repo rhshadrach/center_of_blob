@@ -75,17 +75,6 @@ class CsvNameDialog(QFileDialog):
         return result[0]
 
 
-class CsvNameDialog(QFileDialog):
-    @classmethod
-    def getSaveFileName(cls, parent, default_dir):
-        result = super().getSaveFileName(
-            parent,
-            "Choose CSV filename",
-            default_dir,
-        )
-        return result[0]
-
-
 class CentersFileDialog(QFileDialog):
     @classmethod
     def getOpenFileName(cls, parent, default_dir):
