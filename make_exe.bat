@@ -1,7 +1,7 @@
 @echo off
 
 set /p version=<center_of_blob/VERSION
-for /F "tokens=* USEBACKQ" %%F in (`python -c 'import site; print(site.getsitepackages()[0])'`) do (
+for /F "tokens=* USEBACKQ" %%F in (`python -c "import site; print(site.getsitepackages()[0])"`) do (
 set python_path=%%F
 )
 
