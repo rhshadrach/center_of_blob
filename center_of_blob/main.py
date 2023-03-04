@@ -1,26 +1,39 @@
 from __future__ import annotations
-import sys
-import os
-import functools as ft
-from typing import Literal
-from pathlib import Path
 
-from PyQt5.QtWidgets import QMainWindow, QApplication, QAction, QWidget, QPushButton, QGridLayout, QToolBar, QCheckBox, QFileDialog, QSlider, QMessageBox, QLineEdit
-from PyQt5.QtGui import QIntValidator
-from PyQt5 import QtCore
-from PyQt5.QtCore import Qt
-from PyQt5 import QtWidgets
-import traceback
 import datetime
+import os
+import sys
+import traceback
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from PyQt5 import QtCore, QtWidgets
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import (
+    QAction,
+    QApplication,
+    QCheckBox,
+    QGridLayout,
+    QMainWindow,
+    QPushButton,
+    QSlider,
+    QWidget,
+)
+
 from center_of_blob.analyze import identify_centers
-from center_of_blob.main_image import ScrollLabel
-from center_of_blob.channels import Channels, N_CHANNELS
-from center_of_blob.centers import Centers, Center
-from center_of_blob.popups import error_msg, about_dialog, CsvNameDialog, info_dialog, ImageNameDialog, shortcuts_dialog
 from center_of_blob.boxed_range_slider import BoxedRangeSlider
+from center_of_blob.centers import Center, Centers
+from center_of_blob.channels import N_CHANNELS, Channels
+from center_of_blob.main_image import ScrollLabel
+from center_of_blob.popups import (
+    CsvNameDialog,
+    ImageNameDialog,
+    about_dialog,
+    error_msg,
+    info_dialog,
+    shortcuts_dialog,
+)
 from center_of_blob.region import Region
 
 
@@ -31,13 +44,14 @@ def require_image(func):
             error_msg("Must load image first.")
             return
         return func(self, *args, **kwargs)
+
     return wrapper
 
 
 class QLabelDemo(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.state = 'none'
+        self.state = "none"
         self.origin: tuple[float, float] | None = None
         self.channels = Channels()
         self.filename = None
@@ -57,48 +71,50 @@ class QLabelDemo(QMainWindow):
         self.centers_path_button = QPushButton("Select Centers File")
         self.centers_path_button.clicked.connect(lambda: self.get_centers_file())
 
-        self.set_origin_button = QPushButton('Start setting origin', self)
-        self.set_origin_button.setToolTip('Click this button and then click on the desired origin')
+        self.set_origin_button = QPushButton("Start setting origin", self)
+        self.set_origin_button.setToolTip(
+            "Click this button and then click on the desired origin"
+        )
         self.set_origin_button.resize(150, 50)
         self.set_origin_button.clicked.connect(lambda: self.activate_set_origin())
-        self.button_states['setting_origin'] = self.set_origin_button
+        self.button_states["setting_origin"] = self.set_origin_button
 
-        locate_blobs = QPushButton('Locate blobs', self)
-        locate_blobs.setToolTip('Click this button to locate blobs')
+        locate_blobs = QPushButton("Locate blobs", self)
+        locate_blobs.setToolTip("Click this button to locate blobs")
         locate_blobs.resize(150, 50)
         locate_blobs.clicked.connect(lambda: self.locate_blobs())
 
-        self.modify_centers = QPushButton('Start modifying centers', self)
+        self.modify_centers = QPushButton("Start modifying centers", self)
         self.modify_centers.resize(150, 50)
         self.modify_centers.clicked.connect(lambda: self.activate_modify_centers())
-        self.button_states['modifying_centers'] = self.modify_centers
+        self.button_states["modifying_centers"] = self.modify_centers
 
-        self.draw_region = QPushButton('Start drawing region', self)
+        self.draw_region = QPushButton("Start drawing region", self)
         self.draw_region.resize(150, 50)
         self.draw_region.clicked.connect(lambda: self.activate_drawing_region())
-        self.button_states['drawing_region'] = self.draw_region
+        self.button_states["drawing_region"] = self.draw_region
 
-        self.write_csv_button = QPushButton('Write CSV', self)
+        self.write_csv_button = QPushButton("Write CSV", self)
         self.write_csv_button.resize(150, 50)
         self.write_csv_button.clicked.connect(lambda: self.write_csv())
 
         self.mouse_colors = []
         for k in range(1, N_CHANNELS):
-            check_box = QCheckBox(f'Color Channel {k}')
+            check_box = QCheckBox(f"Color Channel {k}")
             check_box.setChecked(False)
             check_box.stateChanged.connect(lambda: self.update_mouse_colors())
             self.mouse_colors.append(check_box)
 
         self.show_channels = []
         for k in range(N_CHANNELS):
-            check_box = QCheckBox(f'Channel {k}')
+            check_box = QCheckBox(f"Channel {k}")
             check_box.setChecked(k == 0)
             check_box.stateChanged.connect(lambda: self.update_channels())
             self.show_channels.append(check_box)
 
         self.show_center_checkboxes = {}
         for k in range(1, N_CHANNELS):
-            check_box = QCheckBox(f'Center {k}')
+            check_box = QCheckBox(f"Center {k}")
             check_box.setChecked(True)
             check_box.stateChanged.connect(lambda: self.update_centers())
             self.show_center_checkboxes[k] = check_box
@@ -154,7 +170,7 @@ class QLabelDemo(QMainWindow):
 
         main.setLayout(layout)
 
-        self.setWindowTitle('Center of Blob - No File Loaded')
+        self.setWindowTitle("Center of Blob - No File Loaded")
         self.label.label.installEventFilter(self)
 
         self.setGeometry(100, 100, 500, 400)
@@ -170,7 +186,7 @@ class QLabelDemo(QMainWindow):
         show_shortcuts.setObjectName("action_show_shortcuts")
         show_shortcuts.triggered.connect(lambda: shortcuts_dialog(self))
 
-        show_about = QAction('About', self)
+        show_about = QAction("About", self)
         show_about.setObjectName("action_show_about")
         show_about.triggered.connect(about_dialog)
 
@@ -223,12 +239,12 @@ class QLabelDemo(QMainWindow):
         except Exception as err:
             error_msg(f"Failed to load file\n\n{path}\n\nError message:\n\n{err}")
         else:
-            self.state = 'none'
+            self.state = "none"
             self.center_colors = "normal"
             self.show_centers = [1, 2, 3]
             self.has_img = True
             self.filename = str(path)
-            self.setWindowTitle(f'Center of Blob - {path.parts[-1]}')
+            self.setWindowTitle(f"Center of Blob - {path.parts[-1]}")
             self.centers.clear()
             self.origin = None
             self.label.reset_image()
@@ -246,9 +262,9 @@ class QLabelDemo(QMainWindow):
             self.label.update_image()
 
     def make_regions(self, data):
-        data = data[data['kind'] == 'region']
-        for name, df in data.groupby('region'):
-            points = zip(df['x'], df['y'])
+        data = data[data["kind"] == "region"]
+        for name, df in data.groupby("region"):
+            points = zip(df["x"], df["y"])
             region = Region()
             for point in points:
                 region.add_point(point)
@@ -259,13 +275,16 @@ class QLabelDemo(QMainWindow):
     def get_centers_file(self):
         mypath = os.path.dirname(os.path.realpath(__file__))
         from center_of_blob.popups import CentersFileDialog
+
         path = CentersFileDialog.getOpenFileName(self, mypath)
         try:
             data = pd.read_csv(path)
-            values = data[data['kind'] == 'center'].query("distance > 0")
+            values = data[data["kind"] == "center"].query("distance > 0")
             new_centers = Centers()
             for _, row in values.iterrows():
-                new_centers[row.x, row.y] = Center(row.x, row.y, (row.red, row.green, row.blue), row.region)
+                new_centers[row.x, row.y] = Center(
+                    row.x, row.y, (row.red, row.green, row.blue), row.region
+                )
             self.regions = []
             self.current_region = None
             self.make_regions(data)
@@ -285,8 +304,8 @@ class QLabelDemo(QMainWindow):
             return
 
         try:
-            point = data[data['kind'] == 'origin'].iloc[0]
-            self.origin = point['x'], point['y']
+            point = data[data["kind"] == "origin"].iloc[0]
+            self.origin = point["x"], point["y"]
         except Exception as err:
             error_msg(f"Failed to find origin in centers file. Error message:\n\n{err}")
             self.centers.clear()
@@ -296,26 +315,26 @@ class QLabelDemo(QMainWindow):
 
     @require_image
     def activate_set_origin(self):
-        if self.state == 'setting_origin':
-            self.state = 'none'
+        if self.state == "setting_origin":
+            self.state = "none"
         else:
-            self.state = 'setting_origin'
+            self.state = "setting_origin"
         self.update_state_buttons()
 
     @require_image
     def activate_modify_centers(self):
-        if self.state == 'modifying_centers':
-            self.state = 'none'
+        if self.state == "modifying_centers":
+            self.state = "none"
         else:
-            self.state = 'modifying_centers'
+            self.state = "modifying_centers"
         self.update_state_buttons()
 
     @require_image
     def activate_drawing_region(self):
-        if self.state == 'drawing_region':
-            self.state = 'none'
+        if self.state == "drawing_region":
+            self.state = "none"
         else:
-            self.state = 'drawing_region'
+            self.state = "drawing_region"
             self.current_region = Region()
         self.update_state_buttons()
 
@@ -330,18 +349,16 @@ class QLabelDemo(QMainWindow):
             if region.contains(point):
                 buffer.append(region)
         if len(buffer) == 0:
-            center.region = ''
+            center.region = ""
             return
 
         region = buffer[0]
-        names = sorted(set(e.name for e in buffer))
+        names = sorted({e.name for e in buffer})
         if len(names) > 1:
-            msg = (
-                'Center belongs to multiple regions with different names:\n'
-            )
+            msg = "Center belongs to multiple regions with different names:\n"
             for name in names:
-                msg += f'  {name}\n'
-            msg += f'Classifying as {region.name}'
+                msg += f"  {name}\n"
+            msg += f"Classifying as {region.name}"
             error_msg(msg)
         center.region = region.name
 
@@ -355,7 +372,9 @@ class QLabelDemo(QMainWindow):
     def stop_drawing_region(self):
         self.current_region.close()
         if len(self.current_region) > 0:
-            name, done1 = QtWidgets.QInputDialog.getText(self, 'Name Region', 'Enter region name:')
+            name, done1 = QtWidgets.QInputDialog.getText(
+                self, "Name Region", "Enter region name:"
+            )
             self.current_region.name = name
             self.regions.append(self.current_region)
             self.classify_centers_by_regions()
@@ -366,12 +385,12 @@ class QLabelDemo(QMainWindow):
     @require_image
     def update_state_buttons(self):
         for name, button in self.button_states.items():
-            label_text = name.replace('_', ' ')
+            label_text = name.replace("_", " ")
             if self.state == name:
-                button.setText(f'Stop {label_text}')
+                button.setText(f"Stop {label_text}")
             else:
-                button.setText(f'Start {label_text}')
-        if self.state != 'drawing_region' and self.current_region is not None:
+                button.setText(f"Start {label_text}")
+        if self.state != "drawing_region" and self.current_region is not None:
             self.stop_drawing_region()
 
     @require_image
@@ -388,7 +407,7 @@ class QLabelDemo(QMainWindow):
             current_color = self.centers[closest].color
             x, y = closest
         color = self.union_colors(current_color, new_color)
-        self.centers[x, y] = Center(x, y, color, '')
+        self.centers[x, y] = Center(x, y, color, "")
         self.classify_center_by_regions((x, y), self.centers[x, y])
         self.label.update_image()
 
@@ -417,15 +436,6 @@ class QLabelDemo(QMainWindow):
         for k, region in enumerate(self.regions):
             if region.contains_point((x, y), radius=30):
                 self.regions.pop(k)
-                self.label.update_image()
-                return
-
-    @require_image
-    def remove_region(self, source, event):
-        x, y = self.mouse_to_pixel(event.pos().x(), event.pos().y())
-        for k, region in enumerate(self.regions):
-            if region.contains_point((x, y), radius=30):
-                self.regions.pop(k)
                 self.classify_centers_by_regions()
                 self.label.update_image()
                 return
@@ -434,7 +444,7 @@ class QLabelDemo(QMainWindow):
         if not self.has_img:
             return
         if not self.enable_tooltip:
-            self.label.setToolTip('')
+            self.label.setToolTip("")
             return
         point = self.mouse_to_pixel(event.pos().x(), event.pos().y())
 
@@ -442,19 +452,22 @@ class QLabelDemo(QMainWindow):
         for region in self.regions:
             if region.contains(point):
                 buffer.append(region.name)
-        self.label.setToolTip(', '.join(buffer))
+        self.label.setToolTip(", ".join(buffer))
         self.label.setToolTipDuration(1500)
 
     def eventFilter(self, source, event):
         if event.type() == QtCore.QEvent.MouseButtonPress:
-            if self.state == 'setting_origin' and event.button() == QtCore.Qt.LeftButton:
+            if (
+                self.state == "setting_origin"
+                and event.button() == QtCore.Qt.LeftButton
+            ):
                 self.set_origin(source, event)
-            elif self.state == 'modifying_centers':
+            elif self.state == "modifying_centers":
                 if event.button() == QtCore.Qt.LeftButton:
                     self.add_center(source, event)
                 elif event.button() == QtCore.Qt.RightButton:
                     self.remove_center(source, event)
-            elif self.state == 'drawing_region':
+            elif self.state == "drawing_region":
                 if event.button() == QtCore.Qt.LeftButton:
                     self.add_region_point(source, event)
             elif event.button() == QtCore.Qt.RightButton:
@@ -481,17 +494,23 @@ class QLabelDemo(QMainWindow):
             self.show_channels[0].setChecked(not self.show_channels[0].isChecked())
         elif event.key() == Qt.Key_S:
             if modifiers == Qt.ControlModifier:
-                self.show_center_checkboxes[1].setChecked(not self.show_center_checkboxes[1].isChecked())
+                self.show_center_checkboxes[1].setChecked(
+                    not self.show_center_checkboxes[1].isChecked()
+                )
             else:
                 self.show_channels[1].setChecked(not self.show_channels[1].isChecked())
         elif event.key() == Qt.Key_D:
             if modifiers == Qt.ControlModifier:
-                self.show_center_checkboxes[2].setChecked(not self.show_center_checkboxes[2].isChecked())
+                self.show_center_checkboxes[2].setChecked(
+                    not self.show_center_checkboxes[2].isChecked()
+                )
             else:
                 self.show_channels[2].setChecked(not self.show_channels[2].isChecked())
         elif event.key() == Qt.Key_F:
             if modifiers == Qt.ControlModifier:
-                self.show_center_checkboxes[3].setChecked(not self.show_center_checkboxes[3].isChecked())
+                self.show_center_checkboxes[3].setChecked(
+                    not self.show_center_checkboxes[3].isChecked()
+                )
             else:
                 self.show_channels[3].setChecked(not self.show_channels[3].isChecked())
         elif event.key() == Qt.Key_Enter or event.key() == Qt.Key_Return:
@@ -503,21 +522,21 @@ class QLabelDemo(QMainWindow):
         elif event.key() == Qt.Key_T:
             self.enable_tooltip = not self.enable_tooltip
         elif event.key() == Qt.Key_Question:
-            print('*'*20, '  Debug Information  ', '*'*20)
-            print('Centers:')
+            print("*" * 20, "  Debug Information  ", "*" * 20)
+            print("Centers:")
             for k, ((x, y), center) in enumerate(self.centers.items()):
-                print(f'  Center {k}:')
-                print(f'    Coordinates:', (x, y))
-                print(f'    Color:', center.color)
-                print(f'    Region:', center.region)
-            print('*' * 20, '  End Debug Information  ', '*' * 20)
+                print(f"  Center {k}:")
+                print("    Coordinates:", (x, y))
+                print("    Color:", center.color)
+                print("    Region:", center.region)
+            print("*" * 20, "  End Debug Information  ", "*" * 20)
         event.accept()
 
     @require_image
     def set_origin(self, source, event):
         x, y = self.mouse_to_pixel(event.pos().x(), event.pos().y())
         self.origin = (x, y)
-        self.state = 'none'
+        self.state = "none"
         self.update_state_buttons()
         self.label.update_image()
 
@@ -542,13 +561,15 @@ class QLabelDemo(QMainWindow):
                 open_iterations=1,
             )
             for center in centers:
-                self.centers[center] = Center(*center, color, '')
+                self.centers[center] = Center(*center, color, "")
         self.label.update_image()
 
     # TODO: Type Overload
     @require_image
     def visible_channels(self, dtype=int) -> list[int | str]:
-        visible_channels = [k for k, checkbox in enumerate(self.show_channels) if checkbox.isChecked()]
+        visible_channels = [
+            k for k, checkbox in enumerate(self.show_channels) if checkbox.isChecked()
+        ]
         if dtype is int:
             return visible_channels
         else:
@@ -566,38 +587,40 @@ class QLabelDemo(QMainWindow):
 
         x0, y0 = self.origin
         data = []
-        data.append(['origin', x0, y0, 0, 0, 0, 0])
+        data.append(["origin", x0, y0, 0, 0, 0, 0])
         for (x, y), center in self.centers.items():
             distance = np.sqrt((x - x0) * (x - x0) + (y - y0) * (y - y0))
-            data.append(['center', x, y, distance, *center.color, center.region])
+            data.append(["center", x, y, distance, *center.color, center.region])
         for region in self.regions:
             for point in region.points:
-                data.append(['region', *point, -1, 255, 69, 0, region.name])
+                data.append(["region", *point, -1, 255, 69, 0, region.name])
         suggested_filename = f"{os.path.splitext(self.filename)[0]}.csv"
         name = CsvNameDialog.getSaveFileName(self, suggested_filename)
 
         pd.DataFrame(
             data,
-            columns=['kind', 'x', 'y', 'distance', 'red', 'green', 'blue', 'region']
+            columns=["kind", "x", "y", "distance", "red", "green", "blue", "region"],
         ).to_csv(name, index=False)
 
 
 def except_hook(cls, exception, tb):
     timestamp = datetime.datetime.now()
     stacktrace = traceback.format_tb(tb)
-    msg = f'Error: {cls} -- {exception}\nStacktrace\n'
+    msg = f"Error: {cls} -- {exception}\nStacktrace\n"
     for line in stacktrace:
-        msg += f'{line}\n'
-    filename = f'cob_error_{timestamp}.log'
-    with open(filename, 'w') as f:
+        msg += f"{line}\n"
+    filename = f"cob_error_{timestamp}.log"
+    with open(filename, "w") as f:
         f.write(msg)
-    error_msg(f'Unexpected exception occured. The file \n\n{filename}\n\n was created with the following log\n\n{msg}\n')
+    error_msg(
+        f"Unexpected exception occurred. The file \n\n{filename}\n\n was created with "
+        f"the following log\n\n{msg}\n"
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.excepthook = except_hook
     app = QApplication(sys.argv)
     main = QLabelDemo()
     main.show()
     sys.exit(app.exec_())
-

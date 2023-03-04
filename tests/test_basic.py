@@ -1,10 +1,4 @@
-from pathlib import Path
-
-from PyQt5 import QtCore
-
-from center_of_blob.main import QLabelDemo
 from center_of_blob.centers import Center
-from center_of_blob.popups import ImageNameDialog
 from tests import actions, data
 
 
@@ -48,22 +42,22 @@ def test_add_centers(qtbot, monkeypatch):
     # TODO: How to translate (10, 10) to the correct x/y?
     actions.click_color_channel(qtbot, main, channel=1)
     actions.click_main_image(qtbot, main, [(10, 10)])
-    expected = {(30, 165): Center(x=30, y=165, color=(255, 0, 0), region='')}
+    expected = {(30, 165): Center(x=30, y=165, color=(255, 0, 0), region="")}
     assert main.centers == expected
 
     actions.click_color_channel(qtbot, main, channel=2)
     actions.click_main_image(qtbot, main, [(20, 20)])
-    expected[(60, 330)] = Center(x=60, y=330, color=(255, 255, 0), region='')
+    expected[(60, 330)] = Center(x=60, y=330, color=(255, 255, 0), region="")
     assert main.centers == expected
 
     actions.click_color_channel(qtbot, main, channel=1)
     actions.click_main_image(qtbot, main, [(30, 30)])
-    expected[(90, 495)] = Center(x=90, y=495, color=(0, 255, 0), region='')
+    expected[(90, 495)] = Center(x=90, y=495, color=(0, 255, 0), region="")
     assert main.centers == expected
 
     actions.click_color_channel(qtbot, main, channel=3)
     actions.click_main_image(qtbot, main, [(40, 40)])
-    expected[(120, 660)] = Center(x=120, y=660, color=(0, 255, 255), region='')
+    expected[(120, 660)] = Center(x=120, y=660, color=(0, 255, 255), region="")
     assert main.centers == expected
 
 
@@ -82,9 +76,9 @@ def test_add_origin(qtbot, monkeypatch):
 def test_window_title_filename(qtbot, monkeypatch):
     filename = "data/sample.tif"
     main = actions.setup_test(qtbot)
-    assert main.windowTitle() == 'Center of Blob - No File Loaded'
+    assert main.windowTitle() == "Center of Blob - No File Loaded"
 
     actions.load_image(monkeypatch, qtbot, main, filename)
     path = data.resolve_path(filename)
     assert main.filename == path
-    assert main.windowTitle() == f'Center of Blob - sample.tif'
+    assert main.windowTitle() == "Center of Blob - sample.tif"
