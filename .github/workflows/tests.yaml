@@ -32,7 +32,7 @@ jobs:
       run: |
         sudo apt install -y libxcb-xinerama0 pyqt5-dev-tools libxkbcommon-x11-0
         python -m pip install --upgrade pip
-        pip install .[test]
+        pip install .[test] pytest-xvfb
 
     - name: Run tests
       env:
