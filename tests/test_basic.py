@@ -50,7 +50,7 @@ def test_add_centers(qtbot, monkeypatch):
     actions.click_color_channel(qtbot, main, channel=2)
     actions.click_main_image(qtbot, main, [(20, 20)])
     expected_local[(60, 330)] = Center(x=60, y=330, color=(255, 255, 0), region="")
-    expected_ci[(28 * 2, 181 * 2)] = Center(x=28 * 2, y=181 * 2, color=(255, 0, 0), region="")
+    expected_ci[(28 * 2, 181 * 2)] = Center(x=28 * 2, y=181 * 2, color=(255, 255, 0), region="")
     assert main.centers == expected_local or main.centers == expected_ci
 
     actions.click_color_channel(qtbot, main, channel=1)
@@ -62,7 +62,7 @@ def test_add_centers(qtbot, monkeypatch):
     actions.click_color_channel(qtbot, main, channel=3)
     actions.click_main_image(qtbot, main, [(40, 40)])
     expected_local[(120, 660)] = Center(x=120, y=660, color=(0, 255, 255), region="")
-    expected_ci[(28 * 4, 181 * 4)] = Center(x=30 * 4, y=165 * 4, color=(0, 255, 255), region="")
+    expected_ci[(28 * 4, 181 * 4)] = Center(x=28 * 4, y=181 * 4, color=(0, 255, 255), region="")
     assert main.centers == expected_local or main.centers == expected_ci
 
 

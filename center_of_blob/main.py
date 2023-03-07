@@ -543,15 +543,10 @@ class QLabelDemo(QMainWindow):
     @require_image
     def mouse_to_pixel(self, x, y):
         # Prefer numpy C-style coordinates: x=row, y=column
-        print('mouse_to_pixel in:', (x, y))
-        print('mouse_to_pixel label:', (self.label.label.width(), self.label.label.height()))
-        print('mouse_to_pixel channel:', (self.channels.width, self.channels.height))
-        print('window size:', self.frameGeometry().width(), self.frameGeometry().height())
         x, y = y, x
         x_pct = x / self.label.label.width()
         y_pct = y / self.label.label.height()
         result = int(x_pct * self.channels.width), int(y_pct * self.channels.height)
-        print('mouse_to_pixel out:', result)
         return result
 
     @require_image
