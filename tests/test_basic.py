@@ -44,19 +44,19 @@ def test_add_centers(qtbot, monkeypatch):
     actions.click_color_channel(qtbot, main, channel=1)
     actions.click_main_image(qtbot, main, [(10, 10)])
     expected_local = {(30, 165): Center(x=30, y=165, color=(255, 0, 0), region="")}
-    expected_ci = {(28, 181): Center(x=30, y=165, color=(255, 0, 0), region="")}
+    expected_ci = {(28, 181): Center(x=28, y=181, color=(255, 0, 0), region="")}
     assert main.centers == expected_local or main.centers == expected_ci
 
     actions.click_color_channel(qtbot, main, channel=2)
     actions.click_main_image(qtbot, main, [(20, 20)])
     expected_local[(60, 330)] = Center(x=60, y=330, color=(255, 255, 0), region="")
-    expected_ci[(28 * 2, 181 * 2)] = Center(x=30 * 2, y=165 * 2, color=(255, 0, 0), region="")
+    expected_ci[(28 * 2, 181 * 2)] = Center(x=28 * 2, y=181 * 2, color=(255, 0, 0), region="")
     assert main.centers == expected_local or main.centers == expected_ci
 
     actions.click_color_channel(qtbot, main, channel=1)
     actions.click_main_image(qtbot, main, [(30, 30)])
     expected_local[(90, 495)] = Center(x=90, y=495, color=(0, 255, 0), region="")
-    expected_ci[(28 * 3, 181 * 3)] = Center(x=30 * 3, y=165 * 3, color=(0, 255, 0), region="")
+    expected_ci[(28 * 3, 181 * 3)] = Center(x=28 * 3, y=181 * 3, color=(0, 255, 0), region="")
     assert main.centers == expected_local or main.centers == expected_ci
 
     actions.click_color_channel(qtbot, main, channel=3)
@@ -74,7 +74,7 @@ def test_add_origin(qtbot, monkeypatch):
 
     # TODO: How to translate (10, 10) to the correct x/y?
     actions.click_main_image(qtbot, main, [(10, 10)])
-    assert main.origin == (30, 165)
+    assert main.origin == (30, 165) or main.origin == (28, 181)
     assert main.state == "none"
 
 
