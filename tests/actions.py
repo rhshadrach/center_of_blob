@@ -59,7 +59,7 @@ def click_main_image(qtbot, main, points):
 
 @contextlib.contextmanager
 def setup_close_message_box(qtbot):
-    QtCore.QTimer.singleShot(100, ft.partial(close_message_box, qtbot))
+    QtCore.QTimer.singleShot(500, ft.partial(close_message_box, qtbot))
     try:
         yield
     finally:
