@@ -9,7 +9,7 @@ echo python_path="%python_path%"
 
 pyinstaller.exe^
  --add-data "center_of_blob/VERSION;center_of_blob"^
- --add-binary "%python_path%\Shapely.libs;Shapely.libs"^
+ --add-binary "%python_path%\lib\site-packages\Shapely.libs;Shapely.libs"^
  --hidden-import range_slider^
  --exclude-module _bootlocale^
  --onefile center_of_blob/main.py^

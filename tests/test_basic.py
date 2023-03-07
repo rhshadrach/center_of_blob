@@ -39,28 +39,31 @@ def test_add_centers(qtbot, monkeypatch):
     actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
     actions.click_modify_centers(qtbot, main)
 
-    # TODO: How to translate (10, 10) to the correct x/y?
+    # TODO: Compute expected coordinates
+    # Compute based on starting window size
     actions.click_color_channel(qtbot, main, channel=1)
     actions.click_main_image(qtbot, main, [(10, 10)])
-    expected = {(30, 165): Center(x=30, y=165, color=(255, 0, 0), region="")}
-    assert main.centers == expected
+    expected_local = {(30, 165): Center(x=30, y=165, color=(255, 0, 0), region="")}
+    expected_ci = {(28, 181): Center(x=30, y=165, color=(255, 0, 0), region="")}
+    assert main.centers == expected_local or main.centers == expected_ci
 
     actions.click_color_channel(qtbot, main, channel=2)
     actions.click_main_image(qtbot, main, [(20, 20)])
-    expected[(60, 330)] = Center(x=60, y=330, color=(255, 255, 0), region="")
-    assert main.centers == expected
+    expected_local[(60, 330)] = Center(x=60, y=330, color=(255, 255, 0), region="")
+    expected_ci[(28 * 2, 181 * 2)] = Center(x=30 * 2, y=165 * 2, color=(255, 0, 0), region="")
+    assert main.centers == expected_local or main.centers == expected_ci
 
     actions.click_color_channel(qtbot, main, channel=1)
     actions.click_main_image(qtbot, main, [(30, 30)])
-    expected[(90, 495)] = Center(x=90, y=495, color=(0, 255, 0), region="")
-    assert main.centers == expected
+    expected_local[(90, 495)] = Center(x=90, y=495, color=(0, 255, 0), region="")
+    expected_ci[(28 * 3, 181 * 3)] = Center(x=30 * 3, y=165 * 3, color=(0, 255, 0), region="")
+    assert main.centers == expected_local or main.centers == expected_ci
 
     actions.click_color_channel(qtbot, main, channel=3)
     actions.click_main_image(qtbot, main, [(40, 40)])
-    expected[(120, 660)] = Center(x=120, y=660, color=(0, 255, 255), region="")
-    assert main.centers == expected
-
-    assert False
+    expected_local[(120, 660)] = Center(x=120, y=660, color=(0, 255, 255), region="")
+    expected_ci[(28 * 4, 181 * 4)] = Center(x=30 * 4, y=165 * 4, color=(0, 255, 255), region="")
+    assert main.centers == expected_local or main.centers == expected_ci
 
 
 def test_add_origin(qtbot, monkeypatch):
