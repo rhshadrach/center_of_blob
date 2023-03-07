@@ -60,6 +60,8 @@ def test_add_centers(qtbot, monkeypatch):
     expected[(120, 660)] = Center(x=120, y=660, color=(0, 255, 255), region="")
     assert main.centers == expected
 
+    assert False
+
 
 def test_add_origin(qtbot, monkeypatch):
     main = actions.setup_test(qtbot)
