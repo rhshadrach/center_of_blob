@@ -11,6 +11,9 @@ from tests import data
 
 def setup_test(qtbot):
     main = QLabelDemo()
+    # Always use the same Window size for pixel consistency
+    main.showNormal()
+    main.setGeometry(100, 100, 1000, 1000)
     main.hide()
     qtbot.addWidget(main)
     return main
