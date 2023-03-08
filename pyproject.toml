@@ -20,10 +20,7 @@ dependencies = [
     "numpy",
     "pandas",
     "pillow",
-    "pyinstaller",
     "PyQt5",
-    "pytest",
-    "pytest-qt",
     "scikit-image",
     "scikit-learn",
     "scipy",
@@ -47,10 +44,9 @@ lint = [
     "ruff",
     "vulture",
 ]
-test = [
-    "pytest",
-]
-dev = ["center_of_blob[lint]"]
+build = ["pyinstaller"]
+test = ["pytest", "pytest-qt", "pytest-xvfb"]
+dev = ["center_of_blob[lint, build, test]"]
 
 [tool.isort]
 profile = "black"
