@@ -2,7 +2,7 @@ import contextlib
 import functools as ft
 
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import QApplication, QMessageBox
+from PyQt5.QtWidgets import QApplication, QInputDialog, QMessageBox
 
 from center_of_blob.main import QLabelDemo
 from center_of_blob.popups import CentersFileDialog, CsvNameDialog, ImageNameDialog
@@ -50,6 +50,10 @@ def click_modify_centers(qtbot, main):
     qtbot.mouseClick(main.modify_centers, QtCore.Qt.LeftButton)
 
 
+def click_draw_region(qtbot, main):
+    qtbot.mouseClick(main.draw_region, QtCore.Qt.LeftButton)
+
+
 def click_set_origin(qtbot, main):
     qtbot.mouseClick(main.set_origin_button, QtCore.Qt.LeftButton)
 
@@ -69,8 +73,30 @@ def setup_close_message_box(qtbot):
         pass
 
 
+@contextlib.contextmanager
+def setup_close_region_name_box(qtbot, text_value):
+    QtCore.QTimer.singleShot(500, ft.partial(write_region_name, qtbot, text_value))
+    try:
+        yield
+    finally:
+        pass
+
+
+def write_region_name(qtbot, text_value):
+    window = QApplication.activeWindow()
+    if isinstance(window, QInputDialog):
+        window.setTextValue(text_value)
+        window.accept()
+
+
 def close_message_box(qtbot):
     window = QApplication.activeWindow()
     if isinstance(window, QMessageBox):
         close_button = window.button(QMessageBox.Ok)
         qtbot.mouseClick(close_button, QtCore.Qt.LeftButton)
+
+
+def window_accept():
+    window = QApplication.activeWindow()
+    if isinstance(window, QMessageBox):
+        window.accept()

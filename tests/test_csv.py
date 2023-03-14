@@ -20,7 +20,6 @@ def test_write_csv(monkeypatch, qtbot):
     main.origin = (50, 50)
     main.centers = {(20, 30): Center(20, 30, (255, 0, 0), "")}
     with tempfile.NamedTemporaryFile() as file:
-        print(file.name)
         actions.save_csv(monkeypatch, qtbot, main, file.name)
         result = pd.read_csv(file.name)
     expected = pd.DataFrame(
