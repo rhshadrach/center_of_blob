@@ -4,13 +4,13 @@ import functools as ft
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QApplication, QInputDialog, QMessageBox
 
-from center_of_blob.main import QLabelDemo
+from center_of_blob.main import MainWindow
 from center_of_blob.popups import CentersFileDialog, CsvNameDialog, ImageNameDialog
 from tests import data
 
 
 def setup_test(qtbot):
-    main = QLabelDemo()
+    main = MainWindow()
     # Always use the same Window size for pixel consistency
     main.showNormal()
     main.setGeometry(100, 100, 1000, 1000)
