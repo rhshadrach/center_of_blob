@@ -13,19 +13,16 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QAction,
     QApplication,
-    QCheckBox,
     QGridLayout,
     QMainWindow,
     QPushButton,
-    QSlider,
     QWidget,
 )
 
+from center_of_blob import widgets
 from center_of_blob.analyze import identify_centers
-from center_of_blob.boxed_range_slider import BoxedRangeSlider
 from center_of_blob.centers import Center, Centers
 from center_of_blob.channels import N_CHANNELS, Channels
-from center_of_blob.main_image import ScrollLabel
 from center_of_blob.popups import (
     CsvNameDialog,
     ImageNameDialog,
@@ -48,15 +45,15 @@ def require_image(func):
     return wrapper
 
 
-class QLabelDemo(QMainWindow):
+class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.state = "none"
         self.origin: tuple[float, float] | None = None
         self.channels = Channels()
-        self.filename = None
+        self.filename: str | None = None
         self.centers = Centers()
-        self.button_states = {}
+        self.button_states: dict[str, QPushButton] = {}
         self.has_img = False
         self.colors = {0: False, 1: False, 2: False}
         self.current_region = None
@@ -65,82 +62,26 @@ class QLabelDemo(QMainWindow):
         self.center_colors = "normal"
         self.enable_tooltip = True
 
-        self.img_path_button = QPushButton("Select Image File")
-        self.img_path_button.clicked.connect(self.get_img_file)
-
-        self.centers_path_button = QPushButton("Select Centers File")
-        self.centers_path_button.clicked.connect(lambda: self.get_centers_file())
-
-        self.set_origin_button = QPushButton("Start setting origin", self)
-        self.set_origin_button.setToolTip(
-            "Click this button and then click on the desired origin"
+        self.img_path_button = widgets.create_img_path_button(self)
+        self.centers_path_button = widgets.create_centers_path_button(self)
+        self.set_origin_button = widgets.create_set_origin_button(self)
+        self.locate_blobs_button = widgets.create_locate_blobs_button(self)
+        self.modify_centers = widgets.create_modify_centers(self)
+        self.draw_region = widgets.create_draw_region(self)
+        self.write_csv_button = widgets.create_write_csv_button(self)
+        self.mouse_colors = widgets.create_mouse_colors(self, N_CHANNELS)
+        self.show_channels = widgets.create_show_channels(self, N_CHANNELS)
+        self.show_center_checkboxes = widgets.create_show_center_checkboxes(
+            self, N_CHANNELS
         )
-        self.set_origin_button.resize(150, 50)
-        self.set_origin_button.clicked.connect(lambda: self.activate_set_origin())
+        self.brightness = widgets.create_brightness(self, N_CHANNELS)
+        self.label = widgets.create_label(self)
+        self.zoom = widgets.create_zoom(self)
+        self.center_size_slider = widgets.create_center_size_slider(self)
+
         self.button_states["setting_origin"] = self.set_origin_button
-
-        locate_blobs = QPushButton("Locate blobs", self)
-        locate_blobs.setToolTip("Click this button to locate blobs")
-        locate_blobs.resize(150, 50)
-        locate_blobs.clicked.connect(lambda: self.locate_blobs())
-
-        self.modify_centers = QPushButton("Start modifying centers", self)
-        self.modify_centers.resize(150, 50)
-        self.modify_centers.clicked.connect(lambda: self.activate_modify_centers())
         self.button_states["modifying_centers"] = self.modify_centers
-
-        self.draw_region = QPushButton("Start drawing region", self)
-        self.draw_region.resize(150, 50)
-        self.draw_region.clicked.connect(lambda: self.activate_drawing_region())
         self.button_states["drawing_region"] = self.draw_region
-
-        self.write_csv_button = QPushButton("Write CSV", self)
-        self.write_csv_button.resize(150, 50)
-        self.write_csv_button.clicked.connect(lambda: self.write_csv())
-
-        self.mouse_colors = []
-        for k in range(1, N_CHANNELS):
-            check_box = QCheckBox(f"Color Channel {k}")
-            check_box.setChecked(False)
-            check_box.stateChanged.connect(lambda: self.update_mouse_colors())
-            self.mouse_colors.append(check_box)
-
-        self.show_channels = []
-        for k in range(N_CHANNELS):
-            check_box = QCheckBox(f"Channel {k}")
-            check_box.setChecked(k == 0)
-            check_box.stateChanged.connect(lambda: self.update_channels())
-            self.show_channels.append(check_box)
-
-        self.show_center_checkboxes = {}
-        for k in range(1, N_CHANNELS):
-            check_box = QCheckBox(f"Center {k}")
-            check_box.setChecked(True)
-            check_box.stateChanged.connect(lambda: self.update_centers())
-            self.show_center_checkboxes[k] = check_box
-
-        self.brightness_low = []
-        self.brightness_high = []
-        self.brightness = []
-        for k in range(N_CHANNELS):
-            slider = BoxedRangeSlider(0, 255)
-            slider.setMinimumHeight(30)
-            slider.slider.valueChanged.connect(self.update_brightness)
-            self.brightness.append(slider)
-
-        self.label = ScrollLabel(self)
-        self.label.label.setMouseTracking(True)
-
-        self.zoom = QSlider(QtCore.Qt.Horizontal)
-        self.zoom.setMinimum(100)
-        self.zoom.setMaximum(800)
-        self.zoom.valueChanged.connect(lambda: self.update_zoom())
-
-        self.center_size_slider = QSlider(QtCore.Qt.Horizontal)
-        self.center_size_slider.setMinimum(1)
-        self.center_size_slider.setMaximum(10)
-        self.center_size_slider.setValue(5)
-        self.center_size_slider.valueChanged.connect(lambda: self.update_center_size())
 
         main = QWidget(self)
         self.setCentralWidget(main)
@@ -151,9 +92,7 @@ class QLabelDemo(QMainWindow):
         layout.addWidget(self.set_origin_button, 1, 0)
         layout.addWidget(self.modify_centers, 1, 1)
         layout.addWidget(self.draw_region, 1, 2)
-        # layout.addWidget(self.zoom_in, 2, 0)
-        # layout.addWidget(self.zoom_out, 2, 1)
-        layout.addWidget(locate_blobs, 2, 2)
+        layout.addWidget(self.locate_blobs_button, 2, 2)
         for k in range(N_CHANNELS):
             layout.addWidget(self.show_channels[k], k, 3)
             if k > 0:
@@ -164,9 +103,6 @@ class QLabelDemo(QMainWindow):
         layout.addWidget(self.zoom, 4, 0, 1, 6)
         layout.addWidget(self.center_size_slider, 5, 0, 1, 6)
         layout.addWidget(self.label, 6, 0, 1, 6)
-
-        # layout.setColumnStretch(6, 1)
-        # layout.setRowStretch(4, 1)
 
         main.setLayout(layout)
 
@@ -621,6 +557,6 @@ def except_hook(cls, exception, tb):
 if __name__ == "__main__":
     sys.excepthook = except_hook
     app = QApplication(sys.argv)
-    main = QLabelDemo()
+    main = MainWindow()
     main.show()
     sys.exit(app.exec_())
