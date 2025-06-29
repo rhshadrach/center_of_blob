@@ -1,13 +1,20 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QCheckBox, QMainWindow, QPushButton, QSlider
 
 from center_of_blob.boxed_range_slider import BoxedRangeSlider
 from center_of_blob.main_image import ScrollLabel
 
+if TYPE_CHECKING:
+    from center_of_blob.main import MainWindow
+
 
 def create_img_path_button(main_window: QMainWindow) -> QPushButton:
     result = QPushButton("Select Image File")
-    result.clicked.connect(main_window.get_img_file)
+    result.clicked.connect(lambda: main_window.get_img_file())
     return result
 
 
@@ -118,7 +125,7 @@ def create_zoom(main_window: QMainWindow) -> QSlider:
     return result
 
 
-def create_center_size_slider(main_window: QMainWindow) -> QSlider:
+def create_center_size_slider(main_window: MainWindow) -> QSlider:
     result = QSlider(QtCore.Qt.Horizontal)
     result.setMinimum(1)
     result.setMaximum(10)

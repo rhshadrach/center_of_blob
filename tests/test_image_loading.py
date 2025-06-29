@@ -1,7 +1,11 @@
 from tests import actions, data
+import pytest
+import pytestqt
 
 
-def test_load_image(qtbot, monkeypatch):
+def test_load_image(
+    monkeypatch: pytest.MonkeyPatch, qtbot: pytestqt.qtbot.QtBot
+) -> None:
     filename = "data/sample.tif"
     main = actions.setup_test(qtbot)
     actions.load_image(monkeypatch, qtbot, main, filename)
@@ -10,7 +14,9 @@ def test_load_image(qtbot, monkeypatch):
     assert len(main.centers) == 0
 
 
-def test_failed_image(qtbot, monkeypatch):
+def test_failed_image(
+    monkeypatch: pytest.MonkeyPatch, qtbot: pytestqt.qtbot.QtBot
+) -> None:
     filename = "data/sample.tif"
     main = actions.setup_test(qtbot)
 

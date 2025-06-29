@@ -5,10 +5,15 @@ from shapely.geometry.polygon import Polygon
 
 
 class Region:
-    def __init__(self):
-        self.points = []
+    def __init__(
+        self, points: list[tuple[int, int]] | None = None, name: str = "Unnamed"
+    ):
+        if points is None:
+            points = []
+        self.points = points
         self.polygon = None
-        self.name = "Unnamed"
+        # TODO: Make protected, type as str | None
+        self.name = name
 
     def add_point(self, point):
         self.points.append(point)

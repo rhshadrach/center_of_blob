@@ -1,10 +1,15 @@
 from PyQt5 import QtCore
 
+import center_of_blob.testing as tm
 from center_of_blob.centers import Center
 from tests import actions
+import pytest
+import pytestqt
 
 
-def test_make_region_first(qtbot, monkeypatch):
+def test_make_region_first(
+    monkeypatch: pytest.MonkeyPatch, qtbot: pytestqt.qtbot.QtBot
+) -> None:
     main = actions.setup_test(qtbot)
     actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
 
@@ -21,14 +26,18 @@ def test_make_region_first(qtbot, monkeypatch):
     actions.click_main_image(qtbot, main, [(100, 100)])
     actions.click_main_image(qtbot, main, [(200, 200)])
 
+    pixel0 = tm.pos_to_pixel((100, 100), main)
+    pixel1 = tm.pos_to_pixel((200, 200), main)
     expected = {
-        (216, 263): Center(x=216, y=263, color=(255, 0, 0), region="test_name"),
-        (432, 526): Center(x=432, y=526, color=(255, 0, 0), region=""),
+        pixel0: Center(x=pixel0[0], y=pixel0[1], color=(255, 0, 0), region="test_name"),
+        pixel1: Center(x=pixel1[0], y=pixel1[1], color=(255, 0, 0), region=""),
     }
     assert main.centers == expected
 
 
-def test_make_region_after(qtbot, monkeypatch):
+def test_make_region_after(
+    monkeypatch: pytest.MonkeyPatch, qtbot: pytestqt.qtbot.QtBot
+) -> None:
     main = actions.setup_test(qtbot)
     actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
 
@@ -45,14 +54,18 @@ def test_make_region_after(qtbot, monkeypatch):
     with actions.setup_close_region_name_box(qtbot, "test_name"):
         actions.click_draw_region(qtbot, main)
 
+    pixel0 = tm.pos_to_pixel((100, 100), main)
+    pixel1 = tm.pos_to_pixel((200, 200), main)
     expected = {
-        (216, 263): Center(x=216, y=263, color=(255, 0, 0), region="test_name"),
-        (432, 526): Center(x=432, y=526, color=(255, 0, 0), region=""),
+        pixel0: Center(x=pixel0[0], y=pixel0[1], color=(255, 0, 0), region="test_name"),
+        pixel1: Center(x=pixel1[0], y=pixel1[1], color=(255, 0, 0), region=""),
     }
     assert main.centers == expected
 
 
-def test_make_region_overlap_first(qtbot, monkeypatch):
+def test_make_region_overlap_first(
+    monkeypatch: pytest.MonkeyPatch, qtbot: pytestqt.qtbot.QtBot
+) -> None:
     main = actions.setup_test(qtbot)
     actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
 
@@ -78,7 +91,19 @@ def test_make_region_overlap_first(qtbot, monkeypatch):
     actions.click_color_channel(qtbot, main, channel=1)
     actions.click_main_image(qtbot, main, [(105, 105)])
 
+    pixel = tm.pos_to_pixel((105, 105), main)
     expected = {
-        (226, 276): Center(x=226, y=276, color=(255, 0, 0), region="test_name"),
+        (pixel[0], pixel[1]): Center(
+            x=pixel[0], y=pixel[1], color=(255, 0, 0), region="test_name"
+        ),
     }
     assert main.centers == expected
+
+
+def test_add_region_outside_image(qtbot, monkeypatch) -> None:
+    main = actions.setup_test(qtbot)
+    actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
+    actions.click_draw_region(qtbot, main)
+    actions.click_main_image(qtbot, main, [(10000, 10000)])
+    actions.click_draw_region(qtbot, main)
+    assert len(main.regions) == 0

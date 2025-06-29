@@ -157,6 +157,14 @@ class Channels:
     def height(self):
         return self._channels[0].shape[0]
 
+    def pixel_in_image(self, pixel: tuple[int, int]) -> bool:
+        return (
+            pixel[0] >= 0
+            and pixel[0] < self.height
+            and pixel[1] >= 0
+            and pixel[1] < self.width
+        )
+
     def _funnel_channel(self, channel: ChannelT) -> int:
         if isinstance(channel, str):
             result = self._mapper[channel]
