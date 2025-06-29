@@ -45,8 +45,12 @@ lint = [
     "vulture",
 ]
 build = ["pyinstaller"]
-test = ["pytest", "pytest-qt", "pytest-xvfb"]
+test = ["pytest", "pytest-qt", "pytest-xvfb", "pytest-xdist"]
 dev = ["center_of_blob[lint, build, test]"]
 
 [tool.isort]
 profile = "black"
+
+
+[tool.pytest.ini_options]
+addopts = "-n auto"

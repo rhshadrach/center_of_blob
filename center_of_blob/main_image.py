@@ -21,7 +21,7 @@ class ScrollLabel(QScrollArea):
         self.setWidget(self.label)
         self.label.setAlignment(Qt.AlignLeft | Qt.AlignTop)
 
-        # No image has been loaded yet
+        # No image has been loaded yetself.label
         self._height = None
         self._orig_height = None
         self._height_factor = 1.0
