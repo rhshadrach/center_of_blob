@@ -171,7 +171,6 @@ class MainWindow(QMainWindow):
         if isinstance(path, str):
             path = Path(path)
         mypath = str(Path(__file__).resolve())
-        print(type(path), path)
         if path is None:
             path = Path(ImageNameDialog.getOpenFileName(self, mypath)).resolve()
         try:
