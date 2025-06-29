@@ -1,4 +1,6 @@
 from tests import actions, data
+import pytest
+import pytestqt
 
 
 def test_basic(qtbot):
@@ -6,7 +8,9 @@ def test_basic(qtbot):
     assert not main.has_img
 
 
-def test_click_color_channel(qtbot, monkeypatch):
+def test_click_color_channel(
+    monkeypatch: pytest.MonkeyPatch, qtbot: pytestqt.qtbot.QtBot
+) -> None:
     main = actions.setup_test(qtbot)
     actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
     actions.click_modify_centers(qtbot, main)
@@ -32,7 +36,9 @@ def test_click_color_channel(qtbot, monkeypatch):
     assert main.colors == {0: True, 1: True, 2: False}
 
 
-def test_window_title_filename(qtbot, monkeypatch):
+def test_window_title_filename(
+    monkeypatch: pytest.MonkeyPatch, qtbot: pytestqt.qtbot.QtBot
+) -> None:
     filename = "data/sample.tif"
     main = actions.setup_test(qtbot)
     assert main.windowTitle() == "Center of Blob - No File Loaded"

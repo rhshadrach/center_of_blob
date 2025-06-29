@@ -38,6 +38,7 @@ lint = [
     "flake8",
     "isort",
     "mypy",
+    "pre-commit",
     "pylint",
     "pyright",
     "pyupgrade",

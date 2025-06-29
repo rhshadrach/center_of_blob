@@ -20,7 +20,6 @@ from PyQt5.QtWidgets import (
 )
 
 from center_of_blob import widgets
-from center_of_blob.analyze import identify_centers
 from center_of_blob.centers import Center, Centers
 from center_of_blob.channels import N_CHANNELS, Channels
 from center_of_blob.popups import (
@@ -46,7 +45,7 @@ def require_image(func):
 
 
 class MainWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.state = "none"
         self.origin: tuple[float, float] | None = None
@@ -56,8 +55,8 @@ class MainWindow(QMainWindow):
         self.button_states: dict[str, QPushButton] = {}
         self.has_img = False
         self.colors = {0: False, 1: False, 2: False}
-        self.current_region = None
-        self.regions = []
+        self.current_region: Region | None = None
+        self.regions: list[Region] = []
         self.show_centers = [1, 2, 3]
         self.center_colors = "normal"
         self.enable_tooltip = True
@@ -65,7 +64,6 @@ class MainWindow(QMainWindow):
         self.img_path_button = widgets.create_img_path_button(self)
         self.centers_path_button = widgets.create_centers_path_button(self)
         self.set_origin_button = widgets.create_set_origin_button(self)
-        self.locate_blobs_button = widgets.create_locate_blobs_button(self)
         self.modify_centers = widgets.create_modify_centers(self)
         self.draw_region = widgets.create_draw_region(self)
         self.write_csv_button = widgets.create_write_csv_button(self)
@@ -92,7 +90,6 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.set_origin_button, 1, 0)
         layout.addWidget(self.modify_centers, 1, 1)
         layout.addWidget(self.draw_region, 1, 2)
-        layout.addWidget(self.locate_blobs_button, 2, 2)
         for k in range(N_CHANNELS):
             layout.addWidget(self.show_channels[k], k, 3)
             if k > 0:
@@ -137,19 +134,19 @@ class MainWindow(QMainWindow):
             self.get_img_file(img_path)
 
     @require_image
-    def update_zoom(self):
+    def update_zoom(self) -> None:
         self.label.zoom(self.zoom.value() / 100)
 
     @require_image
-    def update_center_size(self):
+    def update_center_size(self) -> None:
         self.label.invalidate_cache()
         self.label.update_image()
 
-    def update_channels(self):
+    def update_channels(self) -> None:
         self.label.invalidate_cache()
         self.label.update_image()
 
-    def update_centers(self):
+    def update_centers(self) -> None:
         self.show_centers = []
         for k in range(1, N_CHANNELS):
             if self.show_center_checkboxes[k].isChecked():
@@ -157,7 +154,7 @@ class MainWindow(QMainWindow):
         self.label.invalidate_cache()
         self.label.update_image()
 
-    def update_brightness(self, dummy):
+    def update_brightness(self, dummy) -> None:
         for channel, slider in enumerate(self.brightness):
             low = slider.low()
             high = slider.high()
@@ -166,11 +163,11 @@ class MainWindow(QMainWindow):
             self.label.invalidate_cache()
             self.label.update_image()
 
-    def update_mouse_colors(self):
+    def update_mouse_colors(self) -> None:
         for k, checkbox in enumerate(self.mouse_colors):
             self.colors[k] = checkbox.isChecked()
 
-    def get_img_file(self, path: str | Path | None = None):
+    def get_img_file(self, path: str | Path | None = None) -> None:
         if isinstance(path, str):
             path = Path(path)
         mypath = str(Path(__file__).resolve())
@@ -205,7 +202,7 @@ class MainWindow(QMainWindow):
             self.colors = {0: False, 1: False, 2: False}
             self.label.update_image()
 
-    def make_regions(self, data):
+    def make_regions(self, data) -> None:
         data = data[data["kind"] == "region"]
         for name, df in data.groupby("region"):
             points = zip(df["x"], df["y"])
@@ -216,7 +213,7 @@ class MainWindow(QMainWindow):
             self.regions.append(region)
 
     @require_image
-    def get_centers_file(self):
+    def get_centers_file(self) -> None:
         mypath = os.path.dirname(os.path.realpath(__file__))
         from center_of_blob.popups import CentersFileDialog
 
@@ -258,7 +255,7 @@ class MainWindow(QMainWindow):
         self.label.update_image()
 
     @require_image
-    def activate_set_origin(self):
+    def activate_set_origin(self) -> None:
         if self.state == "setting_origin":
             self.state = "none"
         else:
@@ -266,7 +263,7 @@ class MainWindow(QMainWindow):
         self.update_state_buttons()
 
     @require_image
-    def activate_modify_centers(self):
+    def activate_modify_centers(self) -> None:
         if self.state == "modifying_centers":
             self.state = "none"
         else:
@@ -274,7 +271,7 @@ class MainWindow(QMainWindow):
         self.update_state_buttons()
 
     @require_image
-    def activate_drawing_region(self):
+    def activate_drawing_region(self) -> None:
         if self.state == "drawing_region":
             self.state = "none"
         else:
@@ -282,14 +279,15 @@ class MainWindow(QMainWindow):
             self.current_region = Region()
         self.update_state_buttons()
 
-    def add_region_point(self, source, event):
+    def add_region_point(self, source, event) -> None:
+        assert self.current_region is not None
         x, y = self.mouse_to_pixel(event.pos().x(), event.pos().y())
         if not self.channels.pixel_in_image((x, y)):
             return
         self.current_region.add_point((x, y))
         self.label.update_image()
 
-    def classify_center_by_regions(self, point, center):
+    def classify_center_by_regions(self, point, center) -> None:
         buffer = []
         for region in self.regions:
             if region.contains(point):
@@ -308,14 +306,15 @@ class MainWindow(QMainWindow):
             error_msg(msg)
         center.region = region.name
 
-    def classify_centers_by_regions(self):
+    def classify_centers_by_regions(self) -> None:
         if len(self.centers) == 0:
             return
         for point, center in self.centers.items():
             self.classify_center_by_regions(point, center)
 
     @require_image
-    def stop_drawing_region(self):
+    def stop_drawing_region(self) -> None:
+        assert self.current_region is not None
         self.current_region.close()
         if len(self.current_region) > 0:
             name, done1 = QtWidgets.QInputDialog.getText(
@@ -329,7 +328,7 @@ class MainWindow(QMainWindow):
         self.current_region = None
 
     @require_image
-    def update_state_buttons(self):
+    def update_state_buttons(self) -> None:
         for name, button in self.button_states.items():
             label_text = name.replace("_", " ")
             if self.state == name:
@@ -340,7 +339,7 @@ class MainWindow(QMainWindow):
             self.stop_drawing_region()
 
     @require_image
-    def add_center(self, source, event):
+    def add_center(self, source, event) -> None:
         new_color = self.active_color()
         if new_color == (0, 0, 0):
             return
@@ -359,19 +358,23 @@ class MainWindow(QMainWindow):
         self.classify_center_by_regions((x, y), self.centers[x, y])
         self.label.update_image()
 
-    def active_color(self):
+    def active_color(self) -> tuple[int, int, int]:
         channels = [k for k, v in self.colors.items() if v]
-        result = tuple(255 if k in channels else 0 for k in range(3))
+        result = (
+            255 if 0 in channels else 0,
+            255 if 1 in channels else 0,
+            255 if 2 in channels else 0,
+        )
         return result
 
-    def union_colors(self, color1, color2):
+    def union_colors(self, color1, color2) -> tuple[int, int, int]:
         return tuple(max(e1, e2) for e1, e2 in zip(color1, color2))
 
-    def subtract_colors(self, color1, color2):
+    def subtract_colors(self, color1, color2) -> tuple[int, int, int]:
         return tuple(max(0, e1 - e2) for e1, e2 in zip(color1, color2))
 
     @require_image
-    def remove_center(self, source, event):
+    def remove_center(self, source, event) -> None:
         x, y = self.mouse_to_pixel(event.pos().x(), event.pos().y())
         if not self.channels.pixel_in_image((x, y)):
             return
@@ -381,7 +384,7 @@ class MainWindow(QMainWindow):
             self.label.update_image()
 
     @require_image
-    def remove_region(self, source, event):
+    def remove_region(self, source, event) -> None:
         x, y = self.mouse_to_pixel(event.pos().x(), event.pos().y())
         if not self.channels.pixel_in_image((x, y)):
             return
@@ -392,7 +395,7 @@ class MainWindow(QMainWindow):
                 self.label.update_image()
                 return
 
-    def update_mouse_tooltip(self, source, event):
+    def update_mouse_tooltip(self, source, event) -> None:
         if not self.has_img:
             return
         if not self.enable_tooltip:
@@ -409,7 +412,7 @@ class MainWindow(QMainWindow):
         self.label.setToolTip(", ".join(buffer))
         self.label.setToolTipDuration(1500)
 
-    def eventFilter(self, source, event):
+    def eventFilter(self, source, event) -> None:
         if event.type() == QtCore.QEvent.MouseButtonPress:
             if (
                 self.state == "setting_origin"
@@ -436,7 +439,7 @@ class MainWindow(QMainWindow):
                 event.ignore()
         return super().eventFilter(source, event)
 
-    def keyPressEvent(self, event):
+    def keyPressEvent(self, event) -> None:
         modifiers = QApplication.keyboardModifiers()
         if event.key() == Qt.Key_R or event.key() == Qt.Key_1:
             self.mouse_colors[0].setChecked(not self.mouse_colors[0].isChecked())
@@ -487,7 +490,7 @@ class MainWindow(QMainWindow):
         event.accept()
 
     @require_image
-    def set_origin(self, source, event: QtGui.QMouseEvent):
+    def set_origin(self, source, event: QtGui.QMouseEvent) -> None:
         x, y = self.mouse_to_pixel(event.pos().x(), event.pos().y())
         if not self.channels.pixel_in_image((x, y)):
             return
@@ -497,7 +500,7 @@ class MainWindow(QMainWindow):
         self.label.update_image()
 
     @require_image
-    def mouse_to_pixel(self, x, y):
+    def mouse_to_pixel(self, x, y) -> tuple[int, int]:
         # Prefer NumPy C-style coordinates: x=row, y=column
         x, y = y, x
         x_pct = x / self.label.label.pixmap().width()
@@ -505,35 +508,17 @@ class MainWindow(QMainWindow):
         result = int(x_pct * self.channels.width), int(y_pct * self.channels.height)
         return result
 
-    @require_image
-    def locate_blobs(self):
-        colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255)]
-        for channel, color in zip(self.channels[1:], colors):
-            centers = identify_centers(
-                channel,
-                sigma=2.0,
-                gaussian_cutoff=20,
-                open_structure=np.ones((5, 5)),
-                open_iterations=1,
-            )
-            for center in centers:
-                self.centers[center] = Center(*center, color, "")
-        self.label.update_image()
-
     # TODO: Type Overload
     @require_image
-    def visible_channels(self, dtype=int) -> list[int | str]:
-        visible_channels = [
+    def visible_channels(self) -> list[int]:
+        result = [
             k for k, checkbox in enumerate(self.show_channels) if checkbox.isChecked()
         ]
-        if dtype is int:
-            return visible_channels
-        else:
-            mapper = self.channels.mapper
-            return {k: mapper[v] for k, v in visible_channels.items()}
+        return result
 
     @require_image
-    def write_csv(self):
+    def write_csv(self) -> None:
+        assert self.filename is not None
         if self.origin is None:
             error_msg("Must set origin to write CSV file.")
             return
@@ -559,7 +544,7 @@ class MainWindow(QMainWindow):
         ).to_csv(name, index=False)
 
 
-def except_hook(cls, exception, tb):
+def except_hook(cls, exception, tb) -> None:
     timestamp = datetime.datetime.now()
     stacktrace = traceback.format_tb(tb)
     msg = f"Error: {cls} -- {exception}\nStacktrace\n"

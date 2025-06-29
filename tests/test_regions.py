@@ -3,9 +3,13 @@ from PyQt5 import QtCore
 import center_of_blob.testing as tm
 from center_of_blob.centers import Center
 from tests import actions
+import pytest
+import pytestqt
 
 
-def test_make_region_first(qtbot, monkeypatch):
+def test_make_region_first(
+    monkeypatch: pytest.MonkeyPatch, qtbot: pytestqt.qtbot.QtBot
+) -> None:
     main = actions.setup_test(qtbot)
     actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
 
@@ -31,7 +35,9 @@ def test_make_region_first(qtbot, monkeypatch):
     assert main.centers == expected
 
 
-def test_make_region_after(qtbot, monkeypatch):
+def test_make_region_after(
+    monkeypatch: pytest.MonkeyPatch, qtbot: pytestqt.qtbot.QtBot
+) -> None:
     main = actions.setup_test(qtbot)
     actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
 
@@ -57,7 +63,9 @@ def test_make_region_after(qtbot, monkeypatch):
     assert main.centers == expected
 
 
-def test_make_region_overlap_first(qtbot, monkeypatch):
+def test_make_region_overlap_first(
+    monkeypatch: pytest.MonkeyPatch, qtbot: pytestqt.qtbot.QtBot
+) -> None:
     main = actions.setup_test(qtbot)
     actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
 
