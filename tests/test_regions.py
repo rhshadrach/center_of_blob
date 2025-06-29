@@ -90,3 +90,12 @@ def test_make_region_overlap_first(qtbot, monkeypatch):
         ),
     }
     assert main.centers == expected
+
+
+def test_add_region_outside_image(qtbot, monkeypatch) -> None:
+    main = actions.setup_test(qtbot)
+    actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
+    actions.click_draw_region(qtbot, main)
+    actions.click_main_image(qtbot, main, [(10000, 10000)])
+    actions.click_draw_region(qtbot, main)
+    assert len(main.regions) == 0

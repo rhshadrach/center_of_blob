@@ -8,7 +8,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from PyQt5 import QtCore, QtWidgets
+from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QAction,
@@ -132,6 +132,10 @@ class MainWindow(QMainWindow):
 
         self.showMaximized()
 
+        img_path = os.environ.get("COB_IMAGE_PATH")
+        if img_path is not None:
+            self.get_img_file(img_path)
+
     @require_image
     def update_zoom(self):
         self.label.zoom(self.zoom.value() / 100)
@@ -166,9 +170,13 @@ class MainWindow(QMainWindow):
         for k, checkbox in enumerate(self.mouse_colors):
             self.colors[k] = checkbox.isChecked()
 
-    def get_img_file(self):
+    def get_img_file(self, path: str | Path | None = None):
+        if isinstance(path, str):
+            path = Path(path)
         mypath = str(Path(__file__).resolve())
-        path = Path(ImageNameDialog.getOpenFileName(self, mypath)).resolve()
+        print(type(path), path)
+        if path is None:
+            path = Path(ImageNameDialog.getOpenFileName(self, mypath)).resolve()
         try:
             # TODO: load_image resets channel state.. bad design
             disable_channel_0 = self.channels.load_image(str(path))
@@ -276,6 +284,8 @@ class MainWindow(QMainWindow):
 
     def add_region_point(self, source, event):
         x, y = self.mouse_to_pixel(event.pos().x(), event.pos().y())
+        if not self.channels.pixel_in_image((x, y)):
+            return
         self.current_region.add_point((x, y))
         self.label.update_image()
 
@@ -335,6 +345,8 @@ class MainWindow(QMainWindow):
         if new_color == (0, 0, 0):
             return
         x, y = self.mouse_to_pixel(event.pos().x(), event.pos().y())
+        if not self.channels.pixel_in_image((x, y)):
+            return
         closest = self.centers.closest((x, y), radius=10)
 
         if closest is None:
@@ -361,6 +373,8 @@ class MainWindow(QMainWindow):
     @require_image
     def remove_center(self, source, event):
         x, y = self.mouse_to_pixel(event.pos().x(), event.pos().y())
+        if not self.channels.pixel_in_image((x, y)):
+            return
         closest = self.centers.closest((x, y), radius=30)
         if closest is not None:
             del self.centers[closest]
@@ -369,6 +383,8 @@ class MainWindow(QMainWindow):
     @require_image
     def remove_region(self, source, event):
         x, y = self.mouse_to_pixel(event.pos().x(), event.pos().y())
+        if not self.channels.pixel_in_image((x, y)):
+            return
         for k, region in enumerate(self.regions):
             if region.contains_point((x, y), radius=30):
                 self.regions.pop(k)
@@ -383,6 +399,8 @@ class MainWindow(QMainWindow):
             self.label.setToolTip("")
             return
         point = self.mouse_to_pixel(event.pos().x(), event.pos().y())
+        if not self.channels.pixel_in_image(point):
+            return
 
         buffer = []
         for region in self.regions:
@@ -469,8 +487,10 @@ class MainWindow(QMainWindow):
         event.accept()
 
     @require_image
-    def set_origin(self, source, event):
+    def set_origin(self, source, event: QtGui.QMouseEvent):
         x, y = self.mouse_to_pixel(event.pos().x(), event.pos().y())
+        if not self.channels.pixel_in_image((x, y)):
+            return
         self.origin = (x, y)
         self.state = "none"
         self.update_state_buttons()
@@ -478,10 +498,10 @@ class MainWindow(QMainWindow):
 
     @require_image
     def mouse_to_pixel(self, x, y):
-        # Prefer numpy C-style coordinates: x=row, y=column
+        # Prefer NumPy C-style coordinates: x=row, y=column
         x, y = y, x
-        x_pct = x / self.label.label.width()
-        y_pct = y / self.label.label.height()
+        x_pct = x / self.label.label.pixmap().width()
+        y_pct = y / self.label.label.pixmap().height()
         result = int(x_pct * self.channels.width), int(y_pct * self.channels.height)
         return result
 

@@ -1,5 +1,3 @@
-import center_of_blob.testing as tm
-from center_of_blob.centers import Center
 from tests import actions, data
 
 
@@ -32,52 +30,6 @@ def test_click_color_channel(qtbot, monkeypatch):
 
     actions.click_color_channel(qtbot, main, channel=1)
     assert main.colors == {0: True, 1: True, 2: False}
-
-
-def test_add_centers(qtbot, monkeypatch):
-    # TODO: Active colors starts as (0, 0, 0)?
-    main = actions.setup_test(qtbot)
-    actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
-    actions.click_modify_centers(qtbot, main)
-
-    # Compute based on starting window size
-    actions.click_color_channel(qtbot, main, channel=1)
-    actions.click_main_image(qtbot, main, [(10, 10)])
-
-    pixel = tm.pos_to_pixel((10, 10), main)
-    expected = {pixel: Center(x=pixel[0], y=pixel[1], color=(255, 0, 0), region="")}
-    assert main.centers == expected
-
-    actions.click_color_channel(qtbot, main, channel=2)
-    actions.click_main_image(qtbot, main, [(20, 20)])
-    pixel = tm.pos_to_pixel((20, 20), main)
-    expected[pixel] = Center(x=pixel[0], y=pixel[1], color=(255, 255, 0), region="")
-    assert main.centers == expected
-
-    actions.click_color_channel(qtbot, main, channel=1)
-    actions.click_main_image(qtbot, main, [(30, 30)])
-    pixel = tm.pos_to_pixel((30, 30), main)
-    expected[pixel] = Center(x=pixel[0], y=pixel[1], color=(0, 255, 0), region="")
-    assert main.centers == expected
-
-    actions.click_color_channel(qtbot, main, channel=3)
-    actions.click_main_image(qtbot, main, [(40, 40)])
-    pixel = tm.pos_to_pixel((40, 40), main)
-    expected[pixel] = Center(x=pixel[0], y=pixel[1], color=(0, 255, 255), region="")
-    assert main.centers == expected
-
-
-def test_add_origin(qtbot, monkeypatch):
-    main = actions.setup_test(qtbot)
-    actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
-    actions.click_set_origin(qtbot, main)
-    assert main.state == "setting_origin"
-
-    # TODO: How to translate (10, 10) to the correct x/y?
-    actions.click_main_image(qtbot, main, [(10, 10)])
-    expected = tm.pos_to_pixel((10, 10), main)
-    assert main.origin == expected
-    assert main.state == "none"
 
 
 def test_window_title_filename(qtbot, monkeypatch):

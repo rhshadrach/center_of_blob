@@ -29,7 +29,7 @@ class ScrollLabel(QScrollArea):
         self._cache = None
 
         label = self.label
-        label.setAlignment(Qt.AlignCenter)
+        # label.setAlignment(Qt.AlignCenter)
         label.setScaledContents(True)
         label.setStyleSheet("padding: 0px; margin: 0px")
         label.setWordWrap(True)
@@ -113,7 +113,9 @@ class ScrollLabel(QScrollArea):
         new_pixmap = QtGui.QPixmap.fromImage(new_image)
 
         scaled_pixmap = new_pixmap.scaledToHeight(self._height)
+        self.label.setScaledContents(False)
         self.label.setPixmap(scaled_pixmap)
+        # self.label.setAlignment(Qt.AlignCenter)
         self.label.show()
 
     def event(self, event: QEvent):
