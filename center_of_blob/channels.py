@@ -4,27 +4,29 @@ from typing import Iterable, Literal
 
 import numpy as np
 from PIL import Image
+from PIL.TiffImagePlugin import TiffImageFile
 
 ChannelT = int | Literal["base", "r", "g", "b"]
 N_CHANNELS = 4
 
 
 class Channels:
-    def __init__(self):
+    def __init__(self) -> None:
         # TODO: Can this depend on the file?
         self._mapper = {"base": 0, "r": 1, "g": 2, "b": 3}
-        self.filename = None
-        self.img = None
-        self.arr = None
+        self.filename: str | None = None
+        self.img: Image.Image | None = None
+        self.arr: np.ndarray | None = None
 
         self.brightness = [(0, 255), (0, 255), (0, 255), (0, 255)]
 
-        self._channels = []
-        self._channel_cache = {}
+        self._channels: list[np.ndarray] = []
+        self._channel_cache: dict[int, np.ndarray] = {}
 
     def load_image(self, filename: str) -> bool:
         """Return is whether to disable channel 0"""
         img = Image.open(filename)
+        assert isinstance(img, TiffImageFile)
         arr = np.asarray(img)
 
         channels = []
@@ -59,7 +61,7 @@ class Channels:
 
         return result
 
-    def set_brightness(self, channel, low, high):
+    def set_brightness(self, channel: ChannelT, low: int, high: int) -> None:
         channel = self._funnel_channel(channel)
         if self.brightness[channel] != (low, high):
             self.brightness[channel] = (low, high)
@@ -67,38 +69,38 @@ class Channels:
 
     # TODO: Learn numpy type-hints
     @property
-    def base(self):
+    def base(self) -> np.ndarray:
         return self._channels[0]
 
     # TODO: Learn numpy type-hints
     @property
-    def r(self):
+    def r(self) -> np.ndarray:
         return self._channels[1]
 
     # TODO: Learn numpy type-hints
     @property
-    def g(self):
+    def g(self) -> np.ndarray:
         return self._channels[2]
 
     # TODO: Learn numpy type-hints
     @property
-    def b(self):
+    def b(self) -> np.ndarray:
         return self._channels[3]
 
     # TODO: Learn numpy type-hints
-    def __getitem__(self, item: ChannelT):
+    def __getitem__(self, item: int) -> np.ndarray:
         return self._channels[item]
 
     def __len__(self) -> int:
         return len(self._channels)
 
-    def invalidate_channel_cache(self, channel: int | None):
+    def invalidate_channel_cache(self, channel: int | None) -> None:
         if channel is None:
             self._channel_cache = {}
         elif channel in self._channel_cache:
             del self._channel_cache[channel]
 
-    def _make_channel_data(self, channel):
+    def _make_channel_data(self, channel: int) -> np.ndarray:
         if channel in self._channel_cache:
             return self._channel_cache[channel]
         low, high = self.brightness[channel]
@@ -117,26 +119,15 @@ class Channels:
         return result
 
     # TODO: Learn numpy type-hints
-    def as_rgb(self, channels: Iterable[ChannelT]):
+    def as_rgb(self, channels: Iterable[ChannelT]) -> np.ndarray:
         channels = sorted(self._funnel_channel(channel) for channel in channels)
-        result = None
-
-        if len(channels) == 0:
-            return np.zeros((*self._channels[0].shape, 3))
-
-        if channels != [0]:
-            result = sum(
-                self._make_channel_data(c) for c in range(1, 4) if c in channels
-            )
-        if 0 in channels:  #  or len(channels) == 0:
-            channel0 = self._make_channel_data(0)
-            if result is None:
-                result = channel0
-            else:
-                result += channel0
+        result = sum(
+            (self._make_channel_data(c) for c in range(0, 4) if c in channels),
+            start=np.zeros((*self._channels[0].shape, 3), dtype="uint8"),
+        )
         return result
 
-    def clip_data(self, data, low, high):
+    def clip_data(self, data: np.ndarray, low: float, high: float) -> np.ndarray:
         data = data.copy()
         off = data < low
         on = data > high
@@ -146,15 +137,15 @@ class Channels:
         return data
 
     @property
-    def mapper(self):
+    def mapper(self) -> dict[str, int]:
         return self._mapper.copy()
 
     @property
-    def width(self):
+    def width(self) -> int:
         return self._channels[0].shape[1]
 
     @property
-    def height(self):
+    def height(self) -> int:
         return self._channels[0].shape[0]
 
     def pixel_in_image(self, pixel: tuple[int, int]) -> bool:
@@ -172,14 +163,14 @@ class Channels:
             result = channel
         return result
 
-    def color(self, channels):
+    def color(self, channels: Iterable[ChannelT]) -> tuple[int, int, int]:
         channels = [self._funnel_channel(channel) for channel in channels]
         if channels == [0]:
             return (255, 255, 255)
 
-        buffer = [0, 0, 0]
-        for channel in range(1, len(self._channels)):
-            if channel not in channels:
-                continue
-            buffer[channel - 1] = 255
-        return tuple(buffer)
+        result = (
+            255 if 1 in channels else 0,
+            255 if 2 in channels else 0,
+            255 if 3 in channels else 0,
+        )
+        return result

@@ -1,11 +1,17 @@
 from __future__ import annotations
 
-from PyQt5.QtWidgets import QFileDialog, QMessageBox
+from typing import TYPE_CHECKING
+
+from PyQt5 import QtWidgets
+from PyQt5.QtWidgets import QMessageBox, QMainWindow
 
 from center_of_blob import __version__
 
+if TYPE_CHECKING:
+    from center_of_blob.main import MainWindow
 
-def error_msg(msg):
+
+def error_msg(msg: str) -> None:
     msgBox = QMessageBox()
     msgBox.setIcon(QMessageBox.Critical)
     msgBox.setText(msg)
@@ -14,16 +20,16 @@ def error_msg(msg):
     msgBox.exec()
 
 
-def info_dialog(obj):
+def info_dialog(main_window: MainWindow) -> None:
     msgBox = QMessageBox()
     msgBox.setIcon(QMessageBox.Information)
-    msgBox.setText(f"Filename: {obj.filename}")
+    msgBox.setText(f"Filename: {main_window.filename}")
     msgBox.setWindowTitle("Info")
     msgBox.setStandardButtons(QMessageBox.Ok)
     msgBox.exec()
 
 
-def shortcuts_dialog(obj):
+def shortcuts_dialog(main_window: MainWindow) -> None:
     msgBox = QMessageBox()
     msgBox.setIcon(QMessageBox.Information)
     msgBox.setText(
@@ -44,7 +50,7 @@ def shortcuts_dialog(obj):
     msgBox.exec()
 
 
-def about_dialog():
+def about_dialog() -> None:
     msgBox = QMessageBox()
     msgBox.setIcon(QMessageBox.Information)
     msgBox.setText(f"Center Of Blob version {__version__}\nBy Richard Shadrach")
@@ -53,34 +59,22 @@ def about_dialog():
     msgBox.exec()
 
 
-class ImageNameDialog(QFileDialog):
-    @classmethod
-    def getOpenFileName(cls, parent, default_dir):
-        result = super().getOpenFileName(
-            parent,
-            "Open Image File",
-            default_dir,
-        )
-        return result[0]
+def get_image_filename(main_window: QMainWindow, directory: str) -> str:
+    result = QtWidgets.QFileDialog.getOpenFileName(
+        parent=main_window, caption="Open Image File", directory=directory
+    )[0]
+    return result
 
 
-class CsvNameDialog(QFileDialog):
-    @classmethod
-    def getSaveFileName(cls, parent, default_dir):
-        result = super().getSaveFileName(
-            parent,
-            "Choose CSV filename",
-            default_dir,
-        )
-        return result[0]
+def get_csv_save_filename(main_window: QMainWindow, directory: str) -> str:
+    result = QtWidgets.QFileDialog.getSaveFileName(
+        parent=main_window, caption="Choose CSV filename", directory=directory
+    )[0]
+    return result
 
 
-class CentersFileDialog(QFileDialog):
-    @classmethod
-    def getOpenFileName(cls, parent, default_dir):
-        result = super().getOpenFileName(
-            parent,
-            "Open Centers File",
-            default_dir,
-        )
-        return result[0]
+def get_centers_filename(main_window: QMainWindow, directory: str) -> str:
+    result = QtWidgets.QFileDialog.getOpenFileName(
+        parent=main_window, caption="Open Centers File", directory=directory
+    )[0]
+    return result

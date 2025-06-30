@@ -1,4 +1,5 @@
 import pytest
+import pytestqt
 
 from tests import actions
 
@@ -6,7 +7,13 @@ from tests import actions
 @pytest.mark.parametrize("channel", [0, 1, 2, 3])
 @pytest.mark.parametrize("load_first", [True, False])
 @pytest.mark.parametrize("adjust_low", [True, False])
-def test_adjust_brightness(qtbot, monkeypatch, channel, load_first, adjust_low):
+def test_adjust_brightness(
+    monkeypatch: pytest.MonkeyPatch,
+    qtbot: pytestqt.qtbot.QtBot,
+    channel: int,
+    load_first: bool,
+    adjust_low: bool,
+) -> None:
     expected = {
         0: (0, 255),
         1: (0, 255),

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from PyQt5 import QtCore, QtGui, QtWidgets
+from typing import Any
 
 # Originated from
 # https://www.mail-archive.com/pyqt@riverbankcomputing.com/msg22889.html
@@ -22,7 +23,7 @@ class RangeSlider(QtWidgets.QSlider):
         exception of valueChanged
     """
 
-    def __init__(self, *args):
+    def __init__(self, *args: Any) -> None:
         super().__init__(*args)
 
         self._low = self.minimum()
@@ -37,23 +38,23 @@ class RangeSlider(QtWidgets.QSlider):
         # 0 for the low, 1 for the high, -1 for both
         self.active_slider = 0
 
-    def low(self):
+    def low(self) -> int:
         return self._low
 
-    def setLow(self, low: int):
+    def setLow(self, low: int) -> None:
         self._low = low
         self.valueChanged.emit(self._low, self._high)
         self.update()
 
-    def high(self):
+    def high(self) -> int:
         return self._high
 
-    def setHigh(self, high):
+    def setHigh(self, high: int) -> None:
         self._high = high
         self.valueChanged.emit(self._low, self._high)
         self.update()
 
-    def paintEvent(self, event):
+    def paintEvent(self, event: QtCore.QEvent) -> None:
         # based on http://qt.gitorious.org/qt/qt/blobs/master/src/gui/widgets/qslider.cpp
 
         painter = QtGui.QPainter(self)
@@ -62,7 +63,7 @@ class RangeSlider(QtWidgets.QSlider):
         # draw groove
         opt = QtWidgets.QStyleOptionSlider()
         self.initStyleOption(opt)
-        opt.siderValue = 0
+        opt.sliderValue = 0
         opt.sliderPosition = 0
         opt.subControls = QtWidgets.QStyle.SC_SliderGroove
         if self.tickPosition() != self.NoTicks:
@@ -78,7 +79,7 @@ class RangeSlider(QtWidgets.QSlider):
         opt.subControls = QtWidgets.QStyle.SC_SliderGroove
         # if self.tickPosition() != self.NoTicks:
         #    opt.subControls |= QtWidgets.QStyle.SC_SliderTickmarks
-        opt.siderValue = 0
+        opt.sliderValue = 0
         opt.sliderPosition = self._low
         low_rect = style.subControlRect(
             QtWidgets.QStyle.CC_Slider, opt, QtWidgets.QStyle.SC_SliderHandle, self
@@ -140,7 +141,7 @@ class RangeSlider(QtWidgets.QSlider):
             opt.sliderValue = value
             style.drawComplexControl(QtWidgets.QStyle.CC_Slider, opt, painter, self)
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
         event.accept()
 
         style = QtWidgets.QApplication.style()
@@ -182,7 +183,7 @@ class RangeSlider(QtWidgets.QSlider):
         else:
             event.ignore()
 
-    def mouseMoveEvent(self, event):
+    def mouseMoveEvent(self, event: QtGui.QMouseEvent) -> None:
         if self.pressed_control != QtWidgets.QStyle.SC_SliderHandle:
             event.ignore()
             return
@@ -226,13 +227,13 @@ class RangeSlider(QtWidgets.QSlider):
         if not self.hasTracking():
             self.valueChanged.emit(self._low, self._high)
 
-    def __pick(self, pt):
+    def __pick(self, pt: QtCore.QPoint) -> int:
         if self.orientation() == QtCore.Qt.Horizontal:
             return pt.x()
         else:
             return pt.y()
 
-    def __pixelPosToRangeValue(self, pos):
+    def __pixelPosToRangeValue(self, pos: int) -> int:
         opt = QtWidgets.QStyleOptionSlider()
         self.initStyleOption(opt)
         style = QtWidgets.QApplication.style()

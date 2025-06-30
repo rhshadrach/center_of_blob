@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import QCheckBox, QMainWindow, QPushButton, QSlider
+from PyQt5.QtWidgets import QCheckBox, QPushButton, QSlider
 
 from center_of_blob.boxed_range_slider import BoxedRangeSlider
 from center_of_blob.main_image import ScrollLabel
@@ -12,19 +12,19 @@ if TYPE_CHECKING:
     from center_of_blob.main import MainWindow
 
 
-def create_img_path_button(main_window: QMainWindow) -> QPushButton:
+def create_img_path_button(main_window: MainWindow) -> QPushButton:
     result = QPushButton("Select Image File")
     result.clicked.connect(lambda: main_window.get_img_file())
     return result
 
 
-def create_centers_path_button(main_window: QMainWindow) -> QPushButton:
+def create_centers_path_button(main_window: MainWindow) -> QPushButton:
     result = QPushButton("Select Centers File")
     result.clicked.connect(lambda: main_window.get_centers_file())
     return result
 
 
-def create_set_origin_button(main_window: QMainWindow) -> QPushButton:
+def create_set_origin_button(main_window: MainWindow) -> QPushButton:
     # TODO: Why pass main_window?
     result = QPushButton("Start setting origin", main_window)
     result.setToolTip("Click this button and then click on the desired origin")
@@ -33,16 +33,7 @@ def create_set_origin_button(main_window: QMainWindow) -> QPushButton:
     return result
 
 
-def create_locate_blobs_button(main_window: QMainWindow) -> QPushButton:
-    # TODO: Why pass main_window?
-    result = QPushButton("Locate blobs", main_window)
-    result.setToolTip("Click this button to locate blobs")
-    result.resize(150, 50)
-    result.clicked.connect(lambda: main_window.locate_blobs())
-    return result
-
-
-def create_modify_centers(main_window: QMainWindow) -> QPushButton:
+def create_modify_centers(main_window: MainWindow) -> QPushButton:
     # TODO: Why pass main_window?
     result = QPushButton("Start modifying centers", main_window)
     result.resize(150, 50)
@@ -50,14 +41,14 @@ def create_modify_centers(main_window: QMainWindow) -> QPushButton:
     return result
 
 
-def create_draw_region(main_window: QMainWindow) -> QPushButton:
+def create_draw_region(main_window: MainWindow) -> QPushButton:
     result = QPushButton("Start drawing region", main_window)
     result.resize(150, 50)
     result.clicked.connect(lambda: main_window.activate_drawing_region())
     return result
 
 
-def create_write_csv_button(main_window: QMainWindow) -> QPushButton:
+def create_write_csv_button(main_window: MainWindow) -> QPushButton:
     result = QPushButton("Write CSV", main_window)
     result.resize(150, 50)
     result.clicked.connect(lambda: main_window.write_csv())
@@ -65,7 +56,7 @@ def create_write_csv_button(main_window: QMainWindow) -> QPushButton:
 
 
 # TODO: Change to a dict
-def create_mouse_colors(main_window: QMainWindow, n_channels: int) -> list[QCheckBox]:
+def create_mouse_colors(main_window: MainWindow, n_channels: int) -> list[QCheckBox]:
     result = []
     for k in range(1, n_channels):
         check_box = QCheckBox(f"Color Channel {k}")
@@ -76,7 +67,7 @@ def create_mouse_colors(main_window: QMainWindow, n_channels: int) -> list[QChec
 
 
 # TODO: Change to a dict
-def create_show_channels(main_window: QMainWindow, n_channels: int) -> list[QCheckBox]:
+def create_show_channels(main_window: MainWindow, n_channels: int) -> list[QCheckBox]:
     result = []
     for k in range(n_channels):
         check_box = QCheckBox(f"Channel {k}")
@@ -88,7 +79,7 @@ def create_show_channels(main_window: QMainWindow, n_channels: int) -> list[QChe
 
 # TODO: Change to a dict
 def create_show_center_checkboxes(
-    main_window: QMainWindow, n_channels: int
+    main_window: MainWindow, n_channels: int
 ) -> list[QCheckBox]:
     result = []
     for k in range(n_channels):
@@ -100,24 +91,24 @@ def create_show_center_checkboxes(
 
 
 def create_brightness(
-    main_window: QMainWindow, n_channels: int
+    main_window: MainWindow, n_channels: int
 ) -> list[BoxedRangeSlider]:
     result = []
     for k in range(n_channels):
         slider = BoxedRangeSlider(0, 255)
         slider.setMinimumHeight(30)
-        slider.slider.valueChanged.connect(main_window.update_brightness)
+        slider.slider.valueChanged.connect(lambda: main_window.update_brightness())
         result.append(slider)
     return result
 
 
-def create_label(main_window: QMainWindow) -> ScrollLabel:
+def create_label(main_window: MainWindow) -> ScrollLabel:
     result = ScrollLabel(main_window)
     result.label.setMouseTracking(True)
     return result
 
 
-def create_zoom(main_window: QMainWindow) -> QSlider:
+def create_zoom(main_window: MainWindow) -> QSlider:
     result = QSlider(QtCore.Qt.Horizontal)
     result.setMinimum(100)
     result.setMaximum(800)

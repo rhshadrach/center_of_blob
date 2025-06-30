@@ -1,9 +1,13 @@
 import center_of_blob.testing as tm
 from center_of_blob.centers import Center
 from tests import actions
+import pytest
+import pytestqt
 
 
-def test_add_centers(qtbot, monkeypatch) -> None:
+def test_add_centers(
+    monkeypatch: pytest.MonkeyPatch, qtbot: pytestqt.qtbot.QtBot
+) -> None:
     # TODO: Active colors starts as (0, 0, 0)?
     main = actions.setup_test(qtbot)
     actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
@@ -36,7 +40,9 @@ def test_add_centers(qtbot, monkeypatch) -> None:
     assert main.centers == expected
 
 
-def test_outside_image(qtbot, monkeypatch) -> None:
+def test_outside_image(
+    monkeypatch: pytest.MonkeyPatch, qtbot: pytestqt.qtbot.QtBot
+) -> None:
     main = actions.setup_test(qtbot)
     actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
     actions.click_modify_centers(qtbot, main)

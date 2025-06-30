@@ -7,7 +7,7 @@ from center_of_blob.range_slider import RangeSlider
 
 
 class BoxedRangeSlider(QtWidgets.QWidget):
-    def __init__(self, minimum: int, maximum: int):
+    def __init__(self, minimum: int, maximum: int) -> None:
         super().__init__()
         self.slider = RangeSlider(QtCore.Qt.Horizontal)
         self.slider.setTracking(False)
@@ -37,47 +37,47 @@ class BoxedRangeSlider(QtWidgets.QWidget):
         layout.addWidget(self.slider)
 
     @QtCore.pyqtSlot(int)
-    def update_slider(self):
+    def update_slider(self) -> None:
         low, high = self.box_low.value(), self.box_high.value()
         self.slider.setLow(low)
         self.slider.setHigh(high)
 
     @QtCore.pyqtSlot(int)
-    def update_from_slider(self):
+    def update_from_slider(self) -> None:
         self.box_low.setValue(self.slider.low())
         self.box_high.setValue(self.slider.high())
 
     @QtCore.pyqtSlot(int)
-    def setMinimum(self, minval):
+    def setMinimum(self, minval: int) -> None:
         self.slider.setMinimum(minval)
 
     @QtCore.pyqtSlot(int)
-    def setMaximum(self, maxval):
+    def setMaximum(self, maxval: int) -> None:
         self.slider.setMaximum(maxval)
 
     @QtCore.pyqtSlot(int, int)
-    def setRange(self, minval, maxval):
+    def setRange(self, minval: int, maxval: int) -> None:
         self.slider.setRange(minval, maxval)
 
     @QtCore.pyqtSlot()
-    def low(self):
+    def low(self) -> int:
         return self.slider.low()
 
     @QtCore.pyqtSlot()
-    def high(self):
+    def high(self) -> int:
         return self.slider.high()
 
     @QtCore.pyqtSlot(int)
-    def setLow(self, value):
+    def setLow(self, value: int) -> None:
         self.slider.setLow(value)
 
     @QtCore.pyqtSlot(int)
-    def setHigh(self, value):
+    def setHigh(self, value: int) -> None:
         self.slider.setHigh(value)
 
     def isSliderDown(self) -> bool:
         return self.slider.isSliderDown()
 
     @property
-    def valueChanged(self):
+    def valueChanged(self) -> QtCore.pyqtBoundSignal:
         return self.slider.valueChanged

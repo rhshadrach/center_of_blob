@@ -12,4 +12,6 @@ def test_info_opens(
 ) -> None:
     main = actions.setup_test(qtbot)
     with actions.setup_close_message_box(qtbot):
-        main.findChild(QAction, "action_show_info").trigger()
+        child = main.findChild(QAction, "action_show_info")
+        assert child is not None
+        child.trigger()
