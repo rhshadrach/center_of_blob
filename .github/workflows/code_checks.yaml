@@ -32,6 +32,6 @@ jobs:
       run: pip install .[lint]
 
     - name: Run pre-commit
-      uses: pre-commit/action@v3
+      uses: pre-commit/action@v3.0.1
       with:
         extra_args: --verbose --all-files
