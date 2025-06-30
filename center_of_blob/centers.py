@@ -4,7 +4,9 @@ from dataclasses import dataclass
 
 
 class Centers(dict):
-    def closest(self, point, radius=None):
+    def closest(
+        self, point: tuple[int, int], radius: float | None = None
+    ) -> tuple[int, int] | None:
         x, y = point
         closest, shortest_distance = None, None
         for x2, y2 in self:

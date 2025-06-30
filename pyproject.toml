@@ -33,17 +33,12 @@ version = {file = "center_of_blob/VERSION"}
 
 [project.optional-dependencies]
 lint = [
-    "black",
     "codespell",
-    "flake8",
-    "isort",
     "mypy",
     "pre-commit",
-    "pylint",
-    "pyright",
-    "pyupgrade",
     "ruff",
-    "vulture",
+    # type-stubs
+    "PyQt5-stubs",
 ]
 build = ["pyinstaller"]
 test = ["pytest", "pytest-qt", "pytest-xvfb", "pytest-xdist"]
@@ -55,3 +50,7 @@ profile = "black"
 
 [tool.pytest.ini_options]
 addopts = "-n auto"
+
+[tool.mypy]
+disallow_untyped_defs = true
+ignore_missing_imports = true

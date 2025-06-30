@@ -1,14 +1,18 @@
 from __future__ import annotations
-
+from typing import TYPE_CHECKING, cast
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import QEvent, Qt
-from PyQt5.QtWidgets import QApplication, QLabel, QScrollArea, QScroller
+from PyQt5.QtWidgets import QApplication, QLabel, QScrollArea, QScroller, QWidget
 
 from center_of_blob import analyze
+import numpy as np
+
+if TYPE_CHECKING:
+    from center_of_blob.main import MainWindow
 
 
 class ScrollLabel(QScrollArea):
-    def __init__(self, parent):
+    def __init__(self, parent: QWidget | None) -> None:
         QScrollArea.__init__(self, parent)
 
         QScroller.grabGesture(self.viewport(), QScroller.LeftMouseButtonGesture)
@@ -22,11 +26,11 @@ class ScrollLabel(QScrollArea):
         self.label.setAlignment(Qt.AlignLeft | Qt.AlignTop)
 
         # No image has been loaded yetself.label
-        self._height = None
-        self._orig_height = None
+        self._height: int | None = None
+        self._orig_height: int | None = None
         self._height_factor = 1.0
 
-        self._cache = None
+        self._cache: np.ndarray | None = None
 
         label = self.label
         # label.setAlignment(Qt.AlignCenter)
@@ -36,15 +40,20 @@ class ScrollLabel(QScrollArea):
 
         self.installEventFilter(self)
 
-    def setText(self, text):
+    @property
+    def _main_window(self) -> MainWindow:
+        return cast("MainWindow", self.parent().parent())
+
+    def setText(self, text: str) -> None:
         self.label.setText(text)
 
-    def _maybe_init_height(self, parent):
+    def _maybe_init_height(self) -> None:
         if self._height is None:
-            self._height = parent.channels[0].shape[0] // 4
+            self._height = self._main_window.channels[0].shape[0] // 4
             self._orig_height = self._height
 
-    def zoom(self, factor: float):
+    def zoom(self, factor: float) -> None:
+        assert self._orig_height is not None
         self._height = int(factor * self._orig_height)
         self.update_image()
 
@@ -63,65 +72,72 @@ class ScrollLabel(QScrollArea):
 
         self._height_factor = factor
 
-    def reset_image(self):
+    def reset_image(self) -> None:
         self._height = None
         self.update_image()
 
-    def invalidate_cache(self):
+    def invalidate_cache(self) -> None:
         self._cache = None
 
-    def update_image(self):
-        parent = self.parent().parent()
-        self._maybe_init_height(parent)
+    def update_image(self) -> None:
+        main_window = self._main_window
+        self._maybe_init_height()
 
         if self._cache is None:
-            self._cache = parent.channels.as_rgb(parent.visible_channels())
+            channels = main_window.visible_channels()
+            if channels is None:
+                return
+            self._cache = main_window.channels.as_rgb(channels)
+        assert self._cache is not None
         arr = self._cache.copy()
 
-        if len(parent.show_centers) > 0:
-            center_size = parent.center_size_slider.value()
-            color = None if parent.center_colors == "normal" else (0, 0, 0)
+        if len(main_window.show_centers) > 0:
+            center_size = main_window.center_size_slider.value()
+            color = None if main_window.center_colors == "normal" else (0, 0, 0)
             border_color = (
-                (255, 255, 255) if parent.center_colors == "normal" else (0, 0, 0)
+                (255, 255, 255) if main_window.center_colors == "normal" else (0, 0, 0)
             )
             analyze.highlight_points_dict(
                 arr,
-                parent.centers,
-                parent.show_centers,
+                main_window.centers,
+                main_window.show_centers,
                 center_size,
                 color,
                 border_color,
             )
-        if parent.origin is not None:
-            analyze.highlight_point(arr, parent.origin, color=(255, 255, 0))
+        if main_window.origin is not None:
+            analyze.highlight_point(arr, main_window.origin, color=(255, 255, 0))
 
-        for region in parent.regions:
+        for region in main_window.regions:
             analyze.highlight_points(arr, region.points, (240, 50, 230))
             analyze.highlight_line_segments(arr, region.points, (240, 50, 230))
 
-        if parent.current_region is not None:
-            analyze.highlight_points(arr, parent.current_region.points, (240, 50, 230))
+        if main_window.current_region is not None:
+            analyze.highlight_points(
+                arr, main_window.current_region.points, (240, 50, 230)
+            )
             analyze.highlight_line_segments(
-                arr, parent.current_region.points, (240, 50, 230)
+                arr, main_window.current_region.points, (240, 50, 230)
             )
 
         height, width, channel = arr.shape
         bytes_per_line = 3 * width
-        new_image = QtGui.QImage(
+        new_image = QtGui.QImage(  # type: ignore[call-overload]
             arr, width, height, bytes_per_line, QtGui.QImage.Format_RGB888
         )
         new_pixmap = QtGui.QPixmap.fromImage(new_image)
 
+        assert self._height is not None
         scaled_pixmap = new_pixmap.scaledToHeight(self._height)
         self.label.setScaledContents(False)
         self.label.setPixmap(scaled_pixmap)
         # self.label.setAlignment(Qt.AlignCenter)
         self.label.show()
 
-    def event(self, event: QEvent):
+    def event(self, event: QEvent) -> bool:
         return super().event(event)
 
-    def eventFilter(self, source, event):
+    def eventFilter(self, source: QtCore.QObject, event: QtCore.QEvent) -> bool:
         if event.type() == QtCore.QEvent.Wheel:
             modifiers = QApplication.keyboardModifiers()
             if bool(modifiers == QtCore.Qt.ControlModifier):

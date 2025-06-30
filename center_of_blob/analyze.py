@@ -1,72 +1,27 @@
 from __future__ import annotations
 
 import itertools as it
+from typing import Iterable
 
 import numpy as np
-from scipy import ndimage
+from center_of_blob.centers import Centers
 
 
-def get_center(idx):
-    x, y = (
-        idx[0].start + (idx[0].stop - idx[0].start) / 2,
-        idx[1].start + (idx[1].stop - idx[1].start) / 2,
-    )
-    return int(x), int(y)
-
-
-def get_surrounding(data, point, radius):
-    x_low = point[0] - radius
-    x_high = point[0] + radius
-    y_low = point[1] - radius
-    y_high = point[1] + radius
-    return data[x_low:x_high, y_low:y_high]
-
-
-def identify_centers(
-    data,
-    sigma: float = 1.0,
-    gaussian_cutoff: int = 20,
-    open_iterations: int = 2,
-    open_structure=None,
-    blob_size_min: int = 20,
-    blob_size_max: int = 2000,
-) -> list[tuple[float, float]]:
-    smoothed = ndimage.gaussian_filter(data, sigma=sigma)
-    binary_img = smoothed > gaussian_cutoff
-
-    open_img = ndimage.binary_erosion(
-        binary_img, structure=open_structure, iterations=open_iterations
-    )
-    close_img = open_img.copy()
-
-    label_im, nb_labels = ndimage.label(close_img)
-
-    labels = []
-    for k, idx in enumerate(ndimage.find_objects(label_im, nb_labels), 1):
-        subimg = label_im[idx]
-        count = subimg[subimg == k].shape[0]
-        if blob_size_min <= count <= blob_size_max:
-            labels.append(k)
-    large_blobs = np.isin(label_im, labels)
-    label_im2, nb_labels2 = ndimage.label(large_blobs)
-
-    centers = []
-    for idx in ndimage.find_objects(label_im2, nb_labels2):
-        center = get_center(idx)
-        if get_surrounding(close_img, center, radius=5).mean() > 0.8:
-            centers.append(center)
-
-    return centers
-
-
-def highlight_points(data, points, color):
+def highlight_points(
+    data: np.ndarray, points: Iterable[tuple[int, int]], color: tuple[int, int, int]
+) -> None:
     for point in points:
         highlight_point(data, point, color)
 
 
 def highlight_points_dict(
-    data, centers, show_centers, center_size, color=None, border_color=(255, 255, 255)
-):
+    data: np.ndarray,
+    centers: Centers,
+    show_centers: list[int],
+    center_size: int,
+    color: tuple[int, int, int] | None = None,
+    border_color: tuple[int, int, int] = (255, 255, 255),
+) -> None:
     for (x, y), center in centers.items():
         show = False
         for channel in show_centers:
@@ -82,12 +37,16 @@ def highlight_points_dict(
         highlight_point(data, (x, y), c, center_size, border_color)
 
 
-def highlight_line_segments(data, points, color):
+def highlight_line_segments(
+    data: np.ndarray, points: Iterable[tuple[int, int]], color: tuple[int, int, int]
+) -> None:
     for (x1, y1), (x2, y2) in it.pairwise(points):
         draw_line(data, x1, y1, x2, y2, color)
 
 
-def draw_line(mat, x0, y0, x1, y1, color):
+def draw_line(
+    mat: np.ndarray, x0: int, y0: int, x1: int, y1: int, color: tuple[int, int, int]
+) -> None:
     if not (
         0 <= x0 < mat.shape[0]
         and 0 <= x1 < mat.shape[0]
@@ -122,8 +81,12 @@ def draw_line(mat, x0, y0, x1, y1, color):
 
 
 def highlight_point(
-    data, point, color=(255, 255, 255), center_size=5, border_color=(255, 255, 255)
-):
+    data: np.ndarray,
+    point: tuple[int, int],
+    color: tuple[int, int, int] = (255, 255, 255),
+    center_size: int = 5,
+    border_color: tuple[int, int, int] = (255, 255, 255),
+) -> None:
     xx, yy = point
     for k in range(center_size):
         for k2 in range(center_size):

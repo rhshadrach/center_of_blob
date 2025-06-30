@@ -100,7 +100,9 @@ def test_make_region_overlap_first(
     assert main.centers == expected
 
 
-def test_add_region_outside_image(qtbot, monkeypatch) -> None:
+def test_add_region_outside_image(
+    monkeypatch: pytest.MonkeyPatch, qtbot: pytestqt.qtbot.QtBot
+) -> None:
     main = actions.setup_test(qtbot)
     actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
     actions.click_draw_region(qtbot, main)

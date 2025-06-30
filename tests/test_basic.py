@@ -3,7 +3,7 @@ import pytest
 import pytestqt
 
 
-def test_basic(qtbot):
+def test_basic(qtbot: pytestqt.qtbot.QtBot) -> None:
     main = actions.setup_test(qtbot)
     assert not main.has_img
 
