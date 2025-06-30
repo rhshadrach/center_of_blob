@@ -26,12 +26,12 @@ jobs:
     - name: Install Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.10'
+        python-version: '3.12'
 
     - name: Install dependencies
       run: pip install .[lint]
 
     - name: Run pre-commit
-      uses: pre-commit/action@v2.0.3
+      uses: pre-commit/action@v3
       with:
         extra_args: --verbose --all-files
