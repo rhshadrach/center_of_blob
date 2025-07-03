@@ -2,6 +2,9 @@ from __future__ import annotations
 import math
 from shapely.geometry import Point
 from shapely.geometry.polygon import Polygon
+import numpy as np
+from center_of_blob import util
+import itertools as it
 
 
 class Region:
@@ -55,3 +58,9 @@ class Region:
 
     def __len__(self) -> int:
         return len(self.points)
+
+    def draw(self, arr: np.ndarray) -> None:
+        for point in self.points:
+            util.draw_point(arr, point=point, color=(240, 50, 230))
+        for (x1, y1), (x2, y2) in it.pairwise(self.points):
+            util.draw_line(arr, x1, y1, x2, y2, color=(240, 50, 230))

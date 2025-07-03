@@ -1,47 +1,7 @@
 from __future__ import annotations
 
-import itertools as it
-from typing import Iterable
 
 import numpy as np
-from center_of_blob.structs import Centers
-
-
-def draw_points(
-    data: np.ndarray, points: Iterable[tuple[int, int]], color: tuple[int, int, int]
-) -> None:
-    for point in points:
-        draw_point(data, point, color)
-
-
-def draw_points_dict(
-    data: np.ndarray,
-    centers: Centers,
-    show_centers: list[int],
-    center_size: int,
-    color: tuple[int, int, int] | None = None,
-    border_color: tuple[int, int, int] = (255, 255, 255),
-) -> None:
-    for (x, y), center in centers.items():
-        show = False
-        for channel in show_centers:
-            if center.color[channel - 1] > 0:
-                show = True
-                break
-        if not show:
-            continue
-        if color is None:
-            c = center.color
-        else:
-            c = color
-        draw_point(data, (x, y), c, center_size, border_color)
-
-
-def draw_line_segments(
-    data: np.ndarray, points: Iterable[tuple[int, int]], color: tuple[int, int, int]
-) -> None:
-    for (x1, y1), (x2, y2) in it.pairwise(points):
-        draw_line(data, x1, y1, x2, y2, color)
 
 
 def draw_line(

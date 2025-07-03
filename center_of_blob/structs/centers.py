@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import numpy as np
+
+from center_of_blob import util
 
 
 class Centers(dict):
@@ -23,6 +26,28 @@ class Centers(dict):
 
     def are_in_img(self, shape: tuple[int, int]) -> bool:
         return all(0 <= x < shape[0] and 0 <= y < shape[1] for x, y in self)
+
+    def draw(
+        self,
+        arr: np.ndarray,
+        size: int,
+        channels: list[int],
+        color_override: tuple[int, int, int] | None = None,
+        border_color: tuple[int, int, int] = (255, 255, 255),
+    ) -> None:
+        for (x, y), center in self.items():
+            show = False
+            for channel in channels:
+                if center.color[channel - 1] > 0:
+                    show = True
+                    break
+            if not show:
+                continue
+            if color_override is None:
+                c = center.color
+            else:
+                c = color_override
+            util.draw_point(arr, (x, y), c, size, border_color)
 
 
 @dataclass

@@ -4,7 +4,7 @@ from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import QEvent, Qt
 from PyQt5.QtWidgets import QApplication, QLabel, QScrollArea, QScroller, QWidget
 
-from center_of_blob import draw
+from center_of_blob import util
 import numpy as np
 
 if TYPE_CHECKING:
@@ -92,31 +92,26 @@ class Panel(QScrollArea):
         arr = self._cache.copy()
 
         if len(main_window.show_centers) > 0:
-            center_size = main_window.center_size_slider.value()
-            color = None if main_window.center_colors == "normal" else (0, 0, 0)
-            border_color = (
-                (255, 255, 255) if main_window.center_colors == "normal" else (0, 0, 0)
-            )
-            draw.draw_points_dict(
-                arr,
-                main_window.centers,
-                main_window.show_centers,
-                center_size,
-                color,
-                border_color,
+            main_window.centers.draw(
+                arr=arr,
+                size=main_window.center_size_slider.value(),
+                channels=main_window.show_centers,
+                color_override=None
+                if main_window.center_colors == "normal"
+                else (0, 0, 0),
+                border_color=(
+                    (255, 255, 255)
+                    if main_window.center_colors == "normal"
+                    else (0, 0, 0)
+                ),
             )
         if main_window.origin is not None:
-            draw.draw_point(arr, main_window.origin, color=(255, 255, 0))
+            util.draw_point(arr, main_window.origin, color=(255, 255, 0))
 
         for region in main_window.regions:
-            draw.draw_points(arr, region.points, (240, 50, 230))
-            draw.draw_line_segments(arr, region.points, (240, 50, 230))
-
+            region.draw(arr)
         if main_window.current_region is not None:
-            draw.draw_points(arr, main_window.current_region.points, (240, 50, 230))
-            draw.draw_line_segments(
-                arr, main_window.current_region.points, (240, 50, 230)
-            )
+            main_window.current_region.draw(arr)
 
         height, width, channel = arr.shape
         bytes_per_line = 3 * width
