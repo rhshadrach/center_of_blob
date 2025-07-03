@@ -59,15 +59,15 @@ def save_csv(
 def click_color_channel(
     qtbot: pytestqt.qtbot.QtBot, main: MainWindow, channel: int
 ) -> None:
-    qtbot.mouseClick(main.mouse_colors[channel - 1], QtCore.Qt.LeftButton)
+    qtbot.mouseClick(main.mouse_channel_checkboxes[channel - 1], QtCore.Qt.LeftButton)
 
 
 def click_modify_centers(qtbot: pytestqt.qtbot.QtBot, main: MainWindow) -> None:
-    qtbot.mouseClick(main.modify_centers, QtCore.Qt.LeftButton)
+    qtbot.mouseClick(main.modify_centers_button, QtCore.Qt.LeftButton)
 
 
 def click_draw_region(qtbot: pytestqt.qtbot.QtBot, main: MainWindow) -> None:
-    qtbot.mouseClick(main.draw_region, QtCore.Qt.LeftButton)
+    qtbot.mouseClick(main.draw_region_button, QtCore.Qt.LeftButton)
 
 
 def click_set_origin(qtbot: pytestqt.qtbot.QtBot, main: MainWindow) -> None:
@@ -79,7 +79,7 @@ def click_main_image(
 ) -> None:
     for point in points:
         pos = QtCore.QPoint(*point)
-        qtbot.mouseClick(main.label.label, QtCore.Qt.LeftButton, pos=pos)
+        qtbot.mouseClick(main.panel.label, QtCore.Qt.LeftButton, pos=pos)
 
 
 @contextlib.contextmanager

@@ -4,14 +4,14 @@ from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import QEvent, Qt
 from PyQt5.QtWidgets import QApplication, QLabel, QScrollArea, QScroller, QWidget
 
-from center_of_blob import analyze
+from center_of_blob import draw
 import numpy as np
 
 if TYPE_CHECKING:
     from center_of_blob.main import MainWindow
 
 
-class ScrollLabel(QScrollArea):
+class Panel(QScrollArea):
     def __init__(self, parent: QWidget | None) -> None:
         QScrollArea.__init__(self, parent)
 
@@ -25,7 +25,7 @@ class ScrollLabel(QScrollArea):
         self.setWidget(self.label)
         self.label.setAlignment(Qt.AlignLeft | Qt.AlignTop)
 
-        # No image has been loaded yetself.label
+        # No image has been loaded yet.
         self._height: int | None = None
         self._orig_height: int | None = None
         self._height_factor = 1.0
@@ -97,7 +97,7 @@ class ScrollLabel(QScrollArea):
             border_color = (
                 (255, 255, 255) if main_window.center_colors == "normal" else (0, 0, 0)
             )
-            analyze.highlight_points_dict(
+            draw.draw_points_dict(
                 arr,
                 main_window.centers,
                 main_window.show_centers,
@@ -106,17 +106,15 @@ class ScrollLabel(QScrollArea):
                 border_color,
             )
         if main_window.origin is not None:
-            analyze.highlight_point(arr, main_window.origin, color=(255, 255, 0))
+            draw.draw_point(arr, main_window.origin, color=(255, 255, 0))
 
         for region in main_window.regions:
-            analyze.highlight_points(arr, region.points, (240, 50, 230))
-            analyze.highlight_line_segments(arr, region.points, (240, 50, 230))
+            draw.draw_points(arr, region.points, (240, 50, 230))
+            draw.draw_line_segments(arr, region.points, (240, 50, 230))
 
         if main_window.current_region is not None:
-            analyze.highlight_points(
-                arr, main_window.current_region.points, (240, 50, 230)
-            )
-            analyze.highlight_line_segments(
+            draw.draw_points(arr, main_window.current_region.points, (240, 50, 230))
+            draw.draw_line_segments(
                 arr, main_window.current_region.points, (240, 50, 230)
             )
 

@@ -4,17 +4,17 @@ import itertools as it
 from typing import Iterable
 
 import numpy as np
-from center_of_blob.centers import Centers
+from center_of_blob.structs import Centers
 
 
-def highlight_points(
+def draw_points(
     data: np.ndarray, points: Iterable[tuple[int, int]], color: tuple[int, int, int]
 ) -> None:
     for point in points:
-        highlight_point(data, point, color)
+        draw_point(data, point, color)
 
 
-def highlight_points_dict(
+def draw_points_dict(
     data: np.ndarray,
     centers: Centers,
     show_centers: list[int],
@@ -34,10 +34,10 @@ def highlight_points_dict(
             c = center.color
         else:
             c = color
-        highlight_point(data, (x, y), c, center_size, border_color)
+        draw_point(data, (x, y), c, center_size, border_color)
 
 
-def highlight_line_segments(
+def draw_line_segments(
     data: np.ndarray, points: Iterable[tuple[int, int]], color: tuple[int, int, int]
 ) -> None:
     for (x1, y1), (x2, y2) in it.pairwise(points):
@@ -80,7 +80,7 @@ def draw_line(
     mat[x, y] = color
 
 
-def highlight_point(
+def draw_point(
     data: np.ndarray,
     point: tuple[int, int],
     color: tuple[int, int, int] = (255, 255, 255),

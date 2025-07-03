@@ -1,5 +1,5 @@
 import center_of_blob.testing as tm
-from center_of_blob.centers import Center
+import center_of_blob as cob
 from tests import actions
 import pytest
 import pytestqt
@@ -18,25 +18,25 @@ def test_add_centers(
     actions.click_main_image(qtbot, main, [(10, 10)])
 
     pixel = tm.pos_to_pixel((10, 10), main)
-    expected = {pixel: Center(x=pixel[0], y=pixel[1], color=(255, 0, 0), region="")}
+    expected = {pixel: cob.Center(x=pixel[0], y=pixel[1], color=(255, 0, 0), region="")}
     assert main.centers == expected
 
     actions.click_color_channel(qtbot, main, channel=2)
     actions.click_main_image(qtbot, main, [(20, 20)])
     pixel = tm.pos_to_pixel((20, 20), main)
-    expected[pixel] = Center(x=pixel[0], y=pixel[1], color=(255, 255, 0), region="")
+    expected[pixel] = cob.Center(x=pixel[0], y=pixel[1], color=(255, 255, 0), region="")
     assert main.centers == expected
 
     actions.click_color_channel(qtbot, main, channel=1)
     actions.click_main_image(qtbot, main, [(30, 30)])
     pixel = tm.pos_to_pixel((30, 30), main)
-    expected[pixel] = Center(x=pixel[0], y=pixel[1], color=(0, 255, 0), region="")
+    expected[pixel] = cob.Center(x=pixel[0], y=pixel[1], color=(0, 255, 0), region="")
     assert main.centers == expected
 
     actions.click_color_channel(qtbot, main, channel=3)
     actions.click_main_image(qtbot, main, [(40, 40)])
     pixel = tm.pos_to_pixel((40, 40), main)
-    expected[pixel] = Center(x=pixel[0], y=pixel[1], color=(0, 255, 255), region="")
+    expected[pixel] = cob.Center(x=pixel[0], y=pixel[1], color=(0, 255, 255), region="")
     assert main.centers == expected
 
 

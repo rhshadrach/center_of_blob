@@ -22,10 +22,8 @@ from PyQt5.QtWidgets import (
 )
 
 from center_of_blob import widgets
-from center_of_blob.centers import Center, Centers
-from center_of_blob.channels import N_CHANNELS, Channels
-from center_of_blob import popups
-from center_of_blob.region import Region
+from center_of_blob.structs import Center, Centers, Channels, N_CHANNELS, Region
+from center_of_blob.widgets import popups
 
 
 C = TypeVar("C", bound="MainWindow")
@@ -33,10 +31,11 @@ P = ParamSpec("P")
 R = TypeVar("R")
 
 
-# TODO: Why do we have to use lambda with the .connect calls below when using this?
 def require_image(
     func: Callable[Concatenate[C, P], R],
 ) -> Callable[Concatenate[C, P], R | None]:
+    """Decorator for methods that require the image."""
+
     def wrapper(self: C, *args: P.args, **kwargs: P.kwargs) -> R | None:
         if not self.has_img:
             popups.error_msg("Must load image first.")
@@ -66,22 +65,24 @@ class MainWindow(QMainWindow):
         self.img_path_button = widgets.create_img_path_button(self)
         self.centers_path_button = widgets.create_centers_path_button(self)
         self.set_origin_button = widgets.create_set_origin_button(self)
-        self.modify_centers = widgets.create_modify_centers(self)
-        self.draw_region = widgets.create_draw_region(self)
+        self.modify_centers_button = widgets.create_modify_centers(self)
+        self.draw_region_button = widgets.create_draw_region(self)
         self.write_csv_button = widgets.create_write_csv_button(self)
-        self.mouse_colors = widgets.create_mouse_colors(self, N_CHANNELS)
+        self.mouse_channel_checkboxes = widgets.create_mouse_channel_checkboxes(
+            self, N_CHANNELS
+        )
         self.show_channels = widgets.create_show_channels(self, N_CHANNELS)
         self.show_center_checkboxes = widgets.create_show_center_checkboxes(
             self, N_CHANNELS
         )
         self.brightness = widgets.create_brightness(self, N_CHANNELS)
-        self.label = widgets.create_label(self)
-        self.zoom = widgets.create_zoom(self)
+        self.panel = widgets.create_panel(self)
+        self.zoom_slider = widgets.create_zoom_slider(self)
         self.center_size_slider = widgets.create_center_size_slider(self)
 
         self.button_states["setting_origin"] = self.set_origin_button
-        self.button_states["modifying_centers"] = self.modify_centers
-        self.button_states["drawing_region"] = self.draw_region
+        self.button_states["modifying_centers"] = self.modify_centers_button
+        self.button_states["drawing_region"] = self.draw_region_button
 
         main = QWidget(self)
         self.setCentralWidget(main)
@@ -90,23 +91,22 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.centers_path_button, 0, 1)
         layout.addWidget(self.write_csv_button, 0, 2)
         layout.addWidget(self.set_origin_button, 1, 0)
-        layout.addWidget(self.modify_centers, 1, 1)
-        layout.addWidget(self.draw_region, 1, 2)
+        layout.addWidget(self.modify_centers_button, 1, 1)
+        layout.addWidget(self.draw_region_button, 1, 2)
         for k in range(N_CHANNELS):
             layout.addWidget(self.show_channels[k], k, 3)
             if k > 0:
                 layout.addWidget(self.show_center_checkboxes[k], k, 4)
             layout.addWidget(self.brightness[k], k, 5)
-        for k, checkbox in enumerate(self.mouse_colors):
+        for k, checkbox in enumerate(self.mouse_channel_checkboxes):
             layout.addWidget(checkbox, 3, k)
-        layout.addWidget(self.zoom, 4, 0, 1, 6)
+        layout.addWidget(self.zoom_slider, 4, 0, 1, 6)
         layout.addWidget(self.center_size_slider, 5, 0, 1, 6)
-        layout.addWidget(self.label, 6, 0, 1, 6)
-
+        layout.addWidget(self.panel, 6, 0, 1, 6)
         main.setLayout(layout)
 
         self.setWindowTitle("Center of Blob - No File Loaded")
-        self.label.label.installEventFilter(self)
+        self.panel.label.installEventFilter(self)
 
         self.setGeometry(100, 100, 500, 400)
 
@@ -116,45 +116,37 @@ class MainWindow(QMainWindow):
         show_info = QAction("Info", self)
         show_info.setObjectName("action_show_info")
         show_info.triggered.connect(lambda: popups.info_dialog(self))
+        help.addAction(show_info)
 
         show_shortcuts = QAction("Shortcuts", self)
         show_shortcuts.setObjectName("action_show_shortcuts")
         show_shortcuts.triggered.connect(lambda: popups.shortcuts_dialog(self))
+        help.addAction(show_shortcuts)
 
         show_about = QAction("About", self)
         show_about.setObjectName("action_show_about")
         show_about.triggered.connect(popups.about_dialog)
-
-        help.addAction(show_info)
-        help.addAction(show_shortcuts)
         help.addAction(show_about)
 
         self.showMaximized()
 
+        # Load image from environment variable for quick development iterations.
         img_path = os.environ.get("COB_IMAGE_PATH")
         if img_path is not None:
             self.get_img_file(img_path)
 
     @require_image
     def update_zoom(self) -> None:
-        self.label.zoom(self.zoom.value() / 100)
+        self.panel.zoom(self.zoom_slider.value() / 100)
 
     @require_image
     def update_center_size(self) -> None:
-        self.label.invalidate_cache()
-        self.label.update_image()
+        self.panel.invalidate_cache()
+        self.panel.update_image()
 
     def update_channels(self) -> None:
-        self.label.invalidate_cache()
-        self.label.update_image()
-
-    def update_centers(self) -> None:
-        self.show_centers = []
-        for k in range(1, N_CHANNELS):
-            if self.show_center_checkboxes[k].isChecked():
-                self.show_centers.append(k)
-        self.label.invalidate_cache()
-        self.label.update_image()
+        self.panel.invalidate_cache()
+        self.panel.update_image()
 
     def update_brightness(self) -> None:
         for channel, slider in enumerate(self.brightness):
@@ -162,11 +154,11 @@ class MainWindow(QMainWindow):
             high = slider.high()
             self.channels.set_brightness(channel, low, high)
         if self.has_img:
-            self.label.invalidate_cache()
-            self.label.update_image()
+            self.panel.invalidate_cache()
+            self.panel.update_image()
 
     def update_mouse_colors(self) -> None:
-        for k, checkbox in enumerate(self.mouse_colors):
+        for k, checkbox in enumerate(self.mouse_channel_checkboxes):
             self.colors[k] = checkbox.isChecked()
 
     def get_img_file(self, path: str | Path | None = None) -> None:
@@ -183,6 +175,7 @@ class MainWindow(QMainWindow):
                 f"Failed to load file\n\n{path}\n\nError message:\n\n{err}"
             )
         else:
+            # TODO: Move to a method, call from __init__
             self.state = "none"
             self.center_colors = "normal"
             self.show_centers = [1, 2, 3]
@@ -191,7 +184,7 @@ class MainWindow(QMainWindow):
             self.setWindowTitle(f"Center of Blob - {path.parts[-1]}")
             self.centers.clear()
             self.origin = None
-            self.label.reset_image()
+            self.panel.reset_image()
             if disable_channel_0:
                 self.show_channels[0].setChecked(False)
                 self.show_channels[0].setDisabled(True)
@@ -199,11 +192,11 @@ class MainWindow(QMainWindow):
             else:
                 self.show_channels[0].setDisabled(False)
                 self.brightness[0].setDisabled(False)
-            self.label._cache = None
+            self.panel._cache = None
             self.current_region = None
             self.regions = []
             self.colors = {0: False, 1: False, 2: False}
-            self.label.update_image()
+            self.panel.update_image()
 
     def make_regions(self, data: pd.DataFrame) -> None:
         data = data[data["kind"] == "region"]
@@ -237,6 +230,7 @@ class MainWindow(QMainWindow):
             )
             return
 
+        # TODO: Reset state better
         self.origin = None
         self.centers = new_centers
         self.colors = {0: False, 1: False, 2: False}
@@ -260,10 +254,10 @@ class MainWindow(QMainWindow):
             self.centers.clear()
             return
 
-        self.label.update_image()
+        self.panel.update_image()
 
     @require_image
-    def activate_set_origin(self) -> None:
+    def click_set_origin(self) -> None:
         if self.state == "setting_origin":
             self.state = "none"
         else:
@@ -271,7 +265,7 @@ class MainWindow(QMainWindow):
         self.update_state_buttons()
 
     @require_image
-    def activate_modify_centers(self) -> None:
+    def click_modify_centers(self) -> None:
         if self.state == "modifying_centers":
             self.state = "none"
         else:
@@ -279,7 +273,7 @@ class MainWindow(QMainWindow):
         self.update_state_buttons()
 
     @require_image
-    def activate_drawing_region(self) -> None:
+    def click_draw_region(self) -> None:
         if self.state == "drawing_region":
             self.state = "none"
         else:
@@ -295,7 +289,7 @@ class MainWindow(QMainWindow):
         if not self.channels.pixel_in_image((x, y)):
             return
         self.current_region.add_point((x, y))
-        self.label.update_image()
+        self.panel.update_image()
 
     def classify_center_by_regions(
         self, point: tuple[int, int], center: Center
@@ -335,8 +329,7 @@ class MainWindow(QMainWindow):
             self.current_region.name = name
             self.regions.append(self.current_region)
             self.classify_centers_by_regions()
-
-            self.label.update_image()
+            self.panel.update_image()
         self.current_region = None
 
     @require_image
@@ -368,7 +361,7 @@ class MainWindow(QMainWindow):
         color = self.union_colors(current_color, new_color)
         self.centers[x, y] = Center(x, y, color, "")
         self.classify_center_by_regions((x, y), self.centers[x, y])
-        self.label.update_image()
+        self.panel.update_image()
 
     def active_color(self) -> tuple[int, int, int]:
         channels = [k for k, v in self.colors.items() if v]
@@ -407,19 +400,23 @@ class MainWindow(QMainWindow):
         closest = self.centers.closest((x, y), radius=30)
         if closest is not None:
             del self.centers[closest]
-            self.label.update_image()
+            self.panel.update_image()
 
     @require_image
     def remove_region(self, source: QtCore.QObject, event: QtGui.QMouseEvent) -> None:
-        x, y = self.mouse_to_pixel(event.pos().x(), event.pos().y())
-        if not self.channels.pixel_in_image((x, y)):
+        point = self.mouse_to_pixel(event.pos().x(), event.pos().y())
+        if not self.channels.pixel_in_image(point):
             return
+
+        distances = {}
         for k, region in enumerate(self.regions):
-            if region.contains_point((x, y), radius=30):
-                self.regions.pop(k)
-                self.classify_centers_by_regions()
-                self.label.update_image()
-                return
+            distances[k] = region.distance_to_boundary_point(point)
+        k = sorted(distances.items(), key=lambda item: item[1])[0][0]
+        if self.regions[k].has_boundary_point(point, radius=30):
+            self.regions.pop(k)
+            self.classify_centers_by_regions()
+            self.panel.update_image()
+            return
 
     def update_mouse_tooltip(
         self, source: QtCore.QObject, event: QtGui.QMouseEvent
@@ -427,7 +424,7 @@ class MainWindow(QMainWindow):
         if not self.has_img:
             return
         if not self.enable_tooltip:
-            self.label.setToolTip("")
+            self.panel.setToolTip("")
             return
         point = self.mouse_to_pixel(event.pos().x(), event.pos().y())
         if not self.channels.pixel_in_image(point):
@@ -437,8 +434,8 @@ class MainWindow(QMainWindow):
         for region in self.regions:
             if region.contains(point):
                 buffer.append(region.name)
-        self.label.setToolTip(", ".join(buffer))
-        self.label.setToolTipDuration(1500)
+        self.panel.setToolTip(", ".join(buffer))
+        self.panel.setToolTipDuration(1500)
 
     def eventFilter(self, source: QtCore.QObject, event: QtCore.QEvent) -> bool:
         if (
@@ -470,18 +467,26 @@ class MainWindow(QMainWindow):
         if isinstance(event, QtGui.QWheelEvent) and event.type() == QtCore.QEvent.Wheel:
             modifiers = QApplication.keyboardModifiers()
             if bool(modifiers == QtCore.Qt.ControlModifier):
-                self.zoom.setValue(self.zoom.value() + int(event.angleDelta().y() / 5))
+                self.zoom_slider.setValue(
+                    self.zoom_slider.value() + int(event.angleDelta().y() / 5)
+                )
                 event.ignore()
         return super().eventFilter(source, event)
 
     def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
         modifiers = QApplication.keyboardModifiers()
         if event.key() == Qt.Key_R or event.key() == Qt.Key_1:
-            self.mouse_colors[0].setChecked(not self.mouse_colors[0].isChecked())
+            self.mouse_channel_checkboxes[0].setChecked(
+                not self.mouse_channel_checkboxes[0].isChecked()
+            )
         elif event.key() == Qt.Key_G or event.key() == Qt.Key_2:
-            self.mouse_colors[1].setChecked(not self.mouse_colors[1].isChecked())
+            self.mouse_channel_checkboxes[1].setChecked(
+                not self.mouse_channel_checkboxes[1].isChecked()
+            )
         elif event.key() == Qt.Key_B or event.key() == Qt.Key_3:
-            self.mouse_colors[2].setChecked(not self.mouse_colors[2].isChecked())
+            self.mouse_channel_checkboxes[2].setChecked(
+                not self.mouse_channel_checkboxes[2].isChecked()
+            )
         elif event.key() == Qt.Key_A:
             self.show_channels[0].setChecked(not self.show_channels[0].isChecked())
         elif event.key() == Qt.Key_S:
@@ -510,7 +515,7 @@ class MainWindow(QMainWindow):
                 self.center_colors = "black"
             else:
                 self.center_colors = "normal"
-            self.label.update_image()
+            self.panel.update_image()
         elif event.key() == Qt.Key_T:
             self.enable_tooltip = not self.enable_tooltip
         elif event.key() == Qt.Key_Question:
@@ -532,17 +537,16 @@ class MainWindow(QMainWindow):
         self.origin = (x, y)
         self.state = "none"
         self.update_state_buttons()
-        self.label.update_image()
+        self.panel.update_image()
 
     def mouse_to_pixel(self, x: int, y: int) -> tuple[int, int]:
         # Prefer NumPy C-style coordinates: x=row, y=column
         x, y = y, x
-        x_pct = x / self.label.label.pixmap().width()
-        y_pct = y / self.label.label.pixmap().height()
+        x_pct = x / self.panel.label.pixmap().width()
+        y_pct = y / self.panel.label.pixmap().height()
         result = int(x_pct * self.channels.width), int(y_pct * self.channels.height)
         return result
 
-    # TODO: Type Overload
     @require_image
     def visible_channels(self) -> list[int]:
         result = [
@@ -580,6 +584,7 @@ class MainWindow(QMainWindow):
         ).to_csv(name, index=False)
 
 
+# TODO: Add test
 def except_hook(
     cls: type[BaseException], exception: BaseException, tb: TracebackType | None
 ) -> None:

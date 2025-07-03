@@ -7,6 +7,6 @@ if TYPE_CHECKING:
 
 # TODO: Hardcode somehow instead of using main
 def pos_to_pixel(pos: tuple[int, int], main: MainWindow) -> tuple[int, int]:
-    x = int(pos[0] / main.label.label.pixmap().width() * main.channels.width)
-    y = int(pos[1] / main.label.label.pixmap().height() * main.channels.height)
+    x = int(pos[0] / main.panel.label.pixmap().width() * main.channels.width)
+    y = int(pos[1] / main.panel.label.pixmap().height() * main.channels.height)
     return x, y

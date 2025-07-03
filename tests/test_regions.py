@@ -1,7 +1,7 @@
 from PyQt5 import QtCore
 
+import center_of_blob as cob
 import center_of_blob.testing as tm
-from center_of_blob.centers import Center
 from tests import actions
 import pytest
 import pytestqt
@@ -29,8 +29,10 @@ def test_make_region_first(
     pixel0 = tm.pos_to_pixel((100, 100), main)
     pixel1 = tm.pos_to_pixel((200, 200), main)
     expected = {
-        pixel0: Center(x=pixel0[0], y=pixel0[1], color=(255, 0, 0), region="test_name"),
-        pixel1: Center(x=pixel1[0], y=pixel1[1], color=(255, 0, 0), region=""),
+        pixel0: cob.Center(
+            x=pixel0[0], y=pixel0[1], color=(255, 0, 0), region="test_name"
+        ),
+        pixel1: cob.Center(x=pixel1[0], y=pixel1[1], color=(255, 0, 0), region=""),
     }
     assert main.centers == expected
 
@@ -57,8 +59,10 @@ def test_make_region_after(
     pixel0 = tm.pos_to_pixel((100, 100), main)
     pixel1 = tm.pos_to_pixel((200, 200), main)
     expected = {
-        pixel0: Center(x=pixel0[0], y=pixel0[1], color=(255, 0, 0), region="test_name"),
-        pixel1: Center(x=pixel1[0], y=pixel1[1], color=(255, 0, 0), region=""),
+        pixel0: cob.Center(
+            x=pixel0[0], y=pixel0[1], color=(255, 0, 0), region="test_name"
+        ),
+        pixel1: cob.Center(x=pixel1[0], y=pixel1[1], color=(255, 0, 0), region=""),
     }
     assert main.centers == expected
 
@@ -93,7 +97,7 @@ def test_make_region_overlap_first(
 
     pixel = tm.pos_to_pixel((105, 105), main)
     expected = {
-        (pixel[0], pixel[1]): Center(
+        (pixel[0], pixel[1]): cob.Center(
             x=pixel[0], y=pixel[1], color=(255, 0, 0), region="test_name"
         ),
     }
