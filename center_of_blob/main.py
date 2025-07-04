@@ -218,8 +218,8 @@ class MainWindow(QMainWindow):
             values = data[data["kind"] == "center"].query("distance > 0")
             new_centers = Centers()
             for _, row in values.iterrows():
-                new_centers[row.x, row.y] = Center(
-                    row.x, row.y, (row.red, row.green, row.blue), row.region
+                new_centers.append(
+                    Center(row.x, row.y, (row.red, row.green, row.blue), row.region)
                 )
             self.regions = []
             self.current_region = None
@@ -291,12 +291,10 @@ class MainWindow(QMainWindow):
         self.current_region.add_point((x, y))
         self.panel.update_image()
 
-    def classify_center_by_regions(
-        self, point: tuple[int, int], center: Center
-    ) -> None:
+    def classify_center_by_regions(self, center: Center) -> None:
         buffer = []
         for region in self.regions:
-            if region.contains(point):
+            if region.contains((center.x, center.y)):
                 buffer.append(region)
         if len(buffer) == 0:
             center.region = ""
@@ -315,8 +313,8 @@ class MainWindow(QMainWindow):
     def classify_centers_by_regions(self) -> None:
         if len(self.centers) == 0:
             return
-        for point, center in self.centers.items():
-            self.classify_center_by_regions(point, center)
+        for center in self.centers:
+            self.classify_center_by_regions(center)
 
     @require_image
     def stop_drawing_region(self) -> None:
@@ -351,16 +349,15 @@ class MainWindow(QMainWindow):
         x, y = self.mouse_to_pixel(event.pos().x(), event.pos().y())
         if not self.channels.pixel_in_image((x, y)):
             return
-        closest = self.centers.closest((x, y), radius=10)
-
-        if closest is None:
-            current_color = (0, 0, 0)
+        center = self.centers.closest((x, y), radius=10)
+        if center is None:
+            center = Center(x, y, new_color, "")
+            self.centers.append(center)
         else:
-            current_color = self.centers[closest].color
-            x, y = closest
-        color = self.union_colors(current_color, new_color)
-        self.centers[x, y] = Center(x, y, color, "")
-        self.classify_center_by_regions((x, y), self.centers[x, y])
+            new_color = self.union_colors(center.color, new_color)
+            center.color = new_color
+            center.region = ""
+        self.classify_center_by_regions(center)
         self.panel.update_image()
 
     def active_color(self) -> tuple[int, int, int]:
@@ -397,9 +394,7 @@ class MainWindow(QMainWindow):
         x, y = self.mouse_to_pixel(event.pos().x(), event.pos().y())
         if not self.channels.pixel_in_image((x, y)):
             return
-        closest = self.centers.closest((x, y), radius=30)
-        if closest is not None:
-            del self.centers[closest]
+        if self.centers.remove_closest((x, y), radius=30):
             self.panel.update_image()
 
     @require_image
@@ -521,9 +516,9 @@ class MainWindow(QMainWindow):
         elif event.key() == Qt.Key_Question:
             print("*" * 20, "  Debug Information  ", "*" * 20)
             print("Centers:")
-            for k, ((x, y), center) in enumerate(self.centers.items()):
+            for k, center in enumerate(self.centers):
                 print(f"  Center {k}:")
-                print("    Coordinates:", (x, y))
+                print("    Coordinates:", (center.x, center.y))
                 print("    Color:", center.color)
                 print("    Region:", center.region)
             print("*" * 20, "  End Debug Information  ", "*" * 20)
@@ -567,7 +562,8 @@ class MainWindow(QMainWindow):
         x0, y0 = self.origin
         data = []
         data.append(["origin", x0, y0, 0, 0, 0, 0])
-        for (x, y), center in self.centers.items():
+        for center in self.centers:
+            x, y = center.x, center.y
             distance = np.sqrt((x - x0) * (x - x0) + (y - y0) * (y - y0))
             data.append(["center", x, y, distance, *center.color, center.region])
         for region in self.regions:

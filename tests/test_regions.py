@@ -28,12 +28,10 @@ def test_make_region_first(
 
     pixel0 = tm.pos_to_pixel((100, 100), main)
     pixel1 = tm.pos_to_pixel((200, 200), main)
-    expected = {
-        pixel0: cob.Center(
-            x=pixel0[0], y=pixel0[1], color=(255, 0, 0), region="test_name"
-        ),
-        pixel1: cob.Center(x=pixel1[0], y=pixel1[1], color=(255, 0, 0), region=""),
-    }
+    expected = [
+        cob.Center(x=pixel0[0], y=pixel0[1], color=(255, 0, 0), region="test_name"),
+        cob.Center(x=pixel1[0], y=pixel1[1], color=(255, 0, 0), region=""),
+    ]
     assert main.centers == expected
 
 
@@ -58,12 +56,10 @@ def test_make_region_after(
 
     pixel0 = tm.pos_to_pixel((100, 100), main)
     pixel1 = tm.pos_to_pixel((200, 200), main)
-    expected = {
-        pixel0: cob.Center(
-            x=pixel0[0], y=pixel0[1], color=(255, 0, 0), region="test_name"
-        ),
-        pixel1: cob.Center(x=pixel1[0], y=pixel1[1], color=(255, 0, 0), region=""),
-    }
+    expected = [
+        cob.Center(x=pixel0[0], y=pixel0[1], color=(255, 0, 0), region="test_name"),
+        cob.Center(x=pixel1[0], y=pixel1[1], color=(255, 0, 0), region=""),
+    ]
     assert main.centers == expected
 
 
@@ -96,11 +92,9 @@ def test_make_region_overlap_first(
     actions.click_main_image(qtbot, main, [(105, 105)])
 
     pixel = tm.pos_to_pixel((105, 105), main)
-    expected = {
-        (pixel[0], pixel[1]): cob.Center(
-            x=pixel[0], y=pixel[1], color=(255, 0, 0), region="test_name"
-        ),
-    }
+    expected = [
+        cob.Center(x=pixel[0], y=pixel[1], color=(255, 0, 0), region="test_name")
+    ]
     assert main.centers == expected
 
 
