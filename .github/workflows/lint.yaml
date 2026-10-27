@@ -1,0 +1,32 @@
+name: Lint
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  prek:
+    name: prek
+    runs-on: ubuntu-latest
+    concurrency:
+      # https://github.community/t/concurrecy-not-work-for-push/183068/7
+      group: ${{ github.event_name == 'push' && github.run_number || github.ref }}-lint
+      cancel-in-progress: true
+    steps:
+      - name: Setup
+        uses: $/.github/actions/setup
+        with:
+          groups: lint
+
+      - name: Run prek
+        env:
+          # Pushes to main would otherwise fail this hook.
+          SKIP: no-commit-to-branch
+        run: uv run prek run --all-files --show-diff-on-failure

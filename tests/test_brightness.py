@@ -1,5 +1,5 @@
 import pytest
-import pytestqt
+import pytestqt.qtbot
 
 from tests import actions
 

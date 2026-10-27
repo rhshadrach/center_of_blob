@@ -1,6 +1,6 @@
 from tests import actions, data
 import pytest
-import pytestqt
+import pytestqt.qtbot
 
 
 def test_basic(qtbot: pytestqt.qtbot.QtBot) -> None:

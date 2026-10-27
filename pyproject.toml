@@ -9,7 +9,7 @@ authors = [
 ]
 description = "Center of Blob"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.10"
 license = {text = "BSD-3-Clause"}
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -31,26 +31,26 @@ dynamic = ["version"]
 [tool.setuptools.dynamic]
 version = {file = "center_of_blob/VERSION"}
 
-[project.optional-dependencies]
+[dependency-groups]
 lint = [
-    "codespell",
-    "mypy",
-    "pre-commit",
-    "ruff",
+    "prek",
+    "ty",
+    "vulture",
     # type-stubs
     "PyQt5-stubs",
 ]
-build = ["pyinstaller"]
+exe = ["pyinstaller"]
 test = ["pytest", "pytest-qt", "pytest-xvfb", "pytest-xdist"]
-dev = ["center_of_blob[lint, build, test]"]
-
-[tool.isort]
-profile = "black"
-
+dev = [
+    {include-group = "lint"},
+    {include-group = "exe"},
+    {include-group = "test"},
+]
 
 [tool.pytest.ini_options]
 addopts = "-n auto"
 
-[tool.mypy]
-disallow_untyped_defs = true
-ignore_missing_imports = true
+[tool.ty.rules]
+# PyQt5-stubs names override parameters `a0`, `ev`, etc.; Qt only ever passes them
+# positionally, so the parameter-name mismatch is not a real error.
+invalid-method-override = "ignore"

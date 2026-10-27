@@ -54,7 +54,7 @@ class RangeSlider(QtWidgets.QSlider):
         self.valueChanged.emit(self._low, self._high)
         self.update()
 
-    def paintEvent(self, event: QtCore.QEvent) -> None:
+    def paintEvent(self, event: QtGui.QPaintEvent) -> None:
         # based on http://qt.gitorious.org/qt/qt/blobs/master/src/gui/widgets/qslider.cpp
 
         painter = QtGui.QPainter(self)

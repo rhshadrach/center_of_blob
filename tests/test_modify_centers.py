@@ -2,7 +2,7 @@ import center_of_blob.testing as tm
 from center_of_blob.centers import Center
 from tests import actions
 import pytest
-import pytestqt
+import pytestqt.qtbot
 
 
 def test_add_centers(
