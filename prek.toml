@@ -11,6 +11,7 @@ hooks = [
     { id = "check-json" },
     { id = "pretty-format-json", args = ["--autofix", "--no-sort-keys"] },
     { id = "check-yaml" },
+    { id = "check-toml" },
     { id = "check-merge-conflict" },
     { id = "detect-private-key" },
     { id = "no-commit-to-branch" },
@@ -21,20 +22,42 @@ repo = "https://github.com/pre-commit/pre-commit-hooks"
 rev = "v6.0.0"
 hooks = [
     { id = "check-docstring-first" },
+    { id = "debug-statements" },
 ]
 
 [[repos]]
 repo = "https://github.com/astral-sh/ruff-pre-commit"
 rev = "v0.17.3"
 hooks = [
+    { id = "ruff-check", args = ["--fix"] },
     { id = "ruff-format" },
+]
+
+[[repos]]
+repo = "https://github.com/codespell-project/codespell"
+rev = "v2.4.3"
+hooks = [
+    { id = "codespell", types_or = ["python", "markdown"] },
 ]
 
 [[repos]]
 repo = "https://github.com/adrienverge/yamllint"
 rev = "v1.38.0"
-hooks = [
-    { id = "yamllint" },
+
+[[repos.hooks]]
+id = "yamllint"
+args = [
+    "--config-data",
+    """
+extends: default
+rules:
+  document-start: disable
+  line-length:
+    max: 120
+  truthy:
+    # GitHub Actions uses `on:` as a key.
+    check-keys: false
+""",
 ]
 
 [[repos]]
@@ -52,8 +75,34 @@ hooks = [
 ]
 
 [[repos]]
-repo = "local"
+repo = "https://github.com/astral-sh/uv-pre-commit"
+rev = "0.13.6"
 hooks = [
-    # Runs in the project environment so ty can resolve third-party imports.
-    { id = "ty", name = "ty", entry = "ty check", language = "system", pass_filenames = false, types = ["python"] },
+    { id = "uv-lock" },
 ]
+
+[[repos]]
+repo = "https://github.com/rhysd/actionlint"
+rev = "v1.7.12"
+hooks = [
+    { id = "actionlint" },
+]
+
+[[repos]]
+repo = "https://github.com/zizmorcore/zizmor-pre-commit"
+rev = "v1.31.1"
+hooks = [
+    { id = "zizmor" },
+]
+
+[[repos]]
+repo = "local"
+
+# Runs in the project environment so ty can resolve third-party imports.
+[[repos.hooks]]
+id = "ty"
+name = "ty"
+entry = "uv run --active --no-sync ty check"
+language = "system"
+pass_filenames = false
+types = ["python"]

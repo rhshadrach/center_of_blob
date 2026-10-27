@@ -15,15 +15,21 @@ jobs:
   prek:
     name: prek
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     concurrency:
-      # https://github.community/t/concurrecy-not-work-for-push/183068/7
-      group: ${{ github.event_name == 'push' && github.run_number || github.ref }}-lint
-      cancel-in-progress: true
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
     steps:
       - name: Setup
         uses: $/.github/actions/setup
         with:
           groups: lint
+
+      - name: Cache prek hook environments
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/prek
+          key: prek-${{ runner.os }}-${{ hashFiles('prek.toml') }}
 
       - name: Run prek
         env:

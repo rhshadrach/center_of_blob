@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import itertools as it
-from typing import Iterable
+from collections.abc import Iterable
 
 import numpy as np
+
 from center_of_blob.centers import Centers
 
 

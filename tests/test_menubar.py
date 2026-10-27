@@ -1,6 +1,6 @@
-from PyQt5.QtWidgets import QAction
 import pytest
 import pytestqt.qtbot
+from PyQt5.QtWidgets import QAction
 
 from tests import actions
 

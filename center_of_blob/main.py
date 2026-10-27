@@ -4,9 +4,10 @@ import datetime
 import os
 import sys
 import traceback
-from types import TracebackType
-from typing import TypeVar, ParamSpec, Callable, Concatenate
+from collections.abc import Callable
 from pathlib import Path
+from types import TracebackType
+from typing import Concatenate, ParamSpec, TypeVar
 
 import numpy as np
 import pandas as pd
@@ -21,12 +22,10 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from center_of_blob import widgets
+from center_of_blob import popups, widgets
 from center_of_blob.centers import Center, Centers
 from center_of_blob.channels import N_CHANNELS, Channels
-from center_of_blob import popups
 from center_of_blob.region import Region
-
 
 C = TypeVar("C", bound="MainWindow")
 P = ParamSpec("P")
@@ -178,7 +177,7 @@ class MainWindow(QMainWindow):
         try:
             # TODO: load_image resets channel state.. bad design
             disable_channel_0 = self.channels.load_image(str(path))
-        except Exception as err:
+        except Exception as err:  # noqa: BLE001 - shown to the user in a popup
             popups.error_msg(
                 f"Failed to load file\n\n{path}\n\nError message:\n\n{err}"
             )
@@ -231,7 +230,7 @@ class MainWindow(QMainWindow):
             self.regions = []
             self.current_region = None
             self.make_regions(data)
-        except Exception as err:
+        except Exception as err:  # noqa: BLE001 - shown to the user in a popup
             popups.error_msg(
                 f"Failed to load file\n\n{path}\n\nError message:\n\n{err}"
             )
@@ -253,7 +252,7 @@ class MainWindow(QMainWindow):
         try:
             point = data[data["kind"] == "origin"].iloc[0]
             self.origin = point["x"], point["y"]
-        except Exception as err:
+        except Exception as err:  # noqa: BLE001 - shown to the user in a popup
             popups.error_msg(
                 f"Failed to find origin in centers file. Error message:\n\n{err}"
             )
@@ -329,7 +328,7 @@ class MainWindow(QMainWindow):
         assert self.current_region is not None
         self.current_region.close()
         if len(self.current_region) > 0:
-            name, done1 = QtWidgets.QInputDialog.getText(
+            name, _done = QtWidgets.QInputDialog.getText(
                 self, "Name Region", "Enter region name:"
             )
             self.current_region.name = name

@@ -1,11 +1,13 @@
 from __future__ import annotations
+
 from typing import TYPE_CHECKING, cast
+
+import numpy as np
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import QEvent, Qt
 from PyQt5.QtWidgets import QApplication, QLabel, QScrollArea, QScroller, QWidget
 
 from center_of_blob import analyze
-import numpy as np
 
 if TYPE_CHECKING:
     from center_of_blob.main import MainWindow
@@ -120,7 +122,7 @@ class ScrollLabel(QScrollArea):
                 arr, main_window.current_region.points, (240, 50, 230)
             )
 
-        height, width, channel = arr.shape
+        height, width, _channel = arr.shape
         bytes_per_line = 3 * width
         new_image = QtGui.QImage(  # type: ignore[call-overload]
             arr, width, height, bytes_per_line, QtGui.QImage.Format_RGB888

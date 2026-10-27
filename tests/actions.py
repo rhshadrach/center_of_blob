@@ -1,14 +1,14 @@
 import contextlib
 import functools as ft
-from typing import Generator
+from collections.abc import Generator
 
 import pytest
 import pytestqt.qtbot
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QApplication, QInputDialog, QMessageBox
 
-from center_of_blob.main import MainWindow
 from center_of_blob import popups
+from center_of_blob.main import MainWindow
 from tests import data
 
 
