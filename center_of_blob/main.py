@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime
+import itertools
 import os
 import sys
 import traceback
@@ -209,22 +210,22 @@ class MainWindow(QMainWindow):
             self.label.update_image()
 
     def read_regions(self, data: pd.DataFrame) -> list[Region]:
-        regions: list[Region] = []
-        region: Region | None = None
-        for row in data[data["kind"] == "region"].itertuples():
-            point = (row.x, row.y)
-            if region is not None and row.region != region.name:
-                regions.append(region)
-                region = None
-            if region is None:
-                region = Region(name=row.region)
-            region.add_point(point)
-            # Saved regions end by repeating their first point, which separates
-            # consecutive regions that have the same name.
-            if len(region) > 1 and point == region.points[0]:
-                regions.append(region)
-                region = None
-        if region is not None:
+        regions = []
+        data = data[data["kind"] == "region"]
+        # Keep the file's order, which is the order the regions were drawn in.
+        for name, df in data.groupby("region", sort=False):
+            if not name.strip():
+                raise ValueError("A region has an empty name.")
+            points = list(zip(df["x"], df["y"]))
+            # Saved regions end by repeating their first point, so reaching it
+            # again before the end means a second region has this name. Clicking
+            # the same pixel twice in a row also repeats a point, so ignore those.
+            outline = [k for k, _ in itertools.groupby(points)]
+            if outline[0] in outline[1:-1]:
+                raise ValueError(f"More than one region is named {name!r}.")
+            region = Region(name=name)
+            for point in points:
+                region.add_point(point)
             regions.append(region)
         return regions
 
