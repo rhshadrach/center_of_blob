@@ -71,10 +71,6 @@ def test_write_then_rewrite_is_identical(
     )
 
 
-@pytest.mark.xfail(
-    reason="Loading keeps only centers with distance > 0, dropping one at the origin",
-    strict=True,
-)
 def test_round_trip_center_at_origin(
     monkeypatch: pytest.MonkeyPatch, qtbot: pytestqt.qtbot.QtBot, tmp_path: Path
 ) -> None:
