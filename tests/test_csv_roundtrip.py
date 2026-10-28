@@ -191,10 +191,6 @@ def test_cancel_save_dialog(
     assert actions.snapshot(main) == before
 
 
-@pytest.mark.xfail(
-    reason="Cancelling the open dialog tries to read '' and shows an error",
-    strict=True,
-)
 def test_cancel_load_centers_dialog(
     monkeypatch: pytest.MonkeyPatch,
     qtbot: pytestqt.qtbot.QtBot,

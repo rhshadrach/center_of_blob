@@ -173,7 +173,11 @@ class MainWindow(QMainWindow):
             path = Path(path)
         mypath = str(Path(__file__).resolve())
         if path is None:
-            path = Path(popups.get_image_filename(self, directory=mypath)).resolve()
+            filename = popups.get_image_filename(self, directory=mypath)
+            if not filename:
+                # The user cancelled the dialog.
+                return
+            path = Path(filename).resolve()
         try:
             # TODO: load_image resets channel state.. bad design
             disable_channel_0 = self.channels.load_image(str(path))
@@ -219,6 +223,9 @@ class MainWindow(QMainWindow):
         mypath = os.path.dirname(os.path.realpath(__file__))
 
         path = popups.get_centers_filename(main_window=self, directory=mypath)
+        if not path:
+            # The user cancelled the dialog.
+            return
         try:
             data = pd.read_csv(path)
             values = data[data["kind"] == "center"]
