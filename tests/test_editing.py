@@ -118,10 +118,6 @@ def test_region_with_too_few_points_contains_nothing(
     assert [center.region for center in main.centers.values()] == [""]
 
 
-@pytest.mark.xfail(
-    reason="Drawing a center near the bottom or right edge indexes past the image",
-    strict=True,
-)
 def test_add_center_at_bottom_right(
     monkeypatch: pytest.MonkeyPatch, qtbot: pytestqt.qtbot.QtBot
 ) -> None:
@@ -133,10 +129,6 @@ def test_add_center_at_bottom_right(
     assert len(main.centers) == 1
 
 
-@pytest.mark.xfail(
-    reason="Drawing the origin near the bottom or right edge indexes past the image",
-    strict=True,
-)
 def test_set_origin_at_bottom_right(
     monkeypatch: pytest.MonkeyPatch, qtbot: pytestqt.qtbot.QtBot
 ) -> None:
@@ -147,17 +139,28 @@ def test_set_origin_at_bottom_right(
     assert main.origin is not None
 
 
-@pytest.mark.xfail(
-    reason="Drawing a point near the top or left edge wraps onto the opposite "
-    "edges through negative indexing",
-    strict=True,
-)
 def test_highlight_point_at_top_left_does_not_wrap() -> None:
     data = np.zeros((40, 50, 3), dtype="uint8")
     analyze.highlight_point(data, (0, 0), (255, 0, 0), center_size=5)
     assert data[-1, -1].tolist() == [0, 0, 0]
     assert data[-1, 0].tolist() == [0, 0, 0]
     assert data[0, -1].tolist() == [0, 0, 0]
+
+
+@pytest.mark.parametrize("point", [(0, 0), (39, 49), (0, 49), (39, 0), (20, 1)])
+@pytest.mark.parametrize("center_size", [1, 5, 10])
+def test_highlight_point_at_edge_draws_clipped_square(
+    point: tuple[int, int], center_size: int
+) -> None:
+    # Drawing at an edge matches drawing on a larger canvas and cropping it.
+    pad = 15
+    data = np.zeros((40, 50, 3), dtype="uint8")
+    padded = np.zeros((40 + 2 * pad, 50 + 2 * pad, 3), dtype="uint8")
+    analyze.highlight_point(data, point, (255, 0, 0), center_size, (0, 0, 255))
+    analyze.highlight_point(
+        padded, (point[0] + pad, point[1] + pad), (255, 0, 0), center_size, (0, 0, 255)
+    )
+    np.testing.assert_array_equal(data, padded[pad:-pad, pad:-pad])
 
 
 def three_frame_tiff(path: str) -> None:

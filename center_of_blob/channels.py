@@ -129,6 +129,9 @@ class Channels:
         return result
 
     def clip_data(self, data: np.ndarray, low: float, high: float) -> np.ndarray:
+        if low == high:
+            # Threshold: the limit of the scaling below as high approaches low.
+            return np.where(data > high, 255, 0)
         data = data.copy()
         off = data < low
         on = data > high
