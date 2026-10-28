@@ -90,18 +90,14 @@ def test_ctrl_toggles_show_centers_checkbox(
     actions.press_key(monkeypatch, qtbot, main, key, ctrl=True)
     assert main.show_center_checkboxes[channel].isChecked() != checked
     # Ctrl changes which centers are shown, not which channels.
-    changed = actions.changed(before, actions.snapshot(main))
-    assert "show_center_checkboxes" in changed
-    assert changed <= {"show_center_checkboxes", "show_centers"}
+    assert actions.changed(before, actions.snapshot(main)) == {
+        "show_center_checkboxes",
+        "show_centers",
+    }
 
 
 @pytest.mark.parametrize(
     ("key", "channel"), [(Qt.Key_S, 1), (Qt.Key_D, 2), (Qt.Key_F, 3)], ids=key_id
-)
-@pytest.mark.xfail(
-    reason="The show-centers checkboxes are connected to update_channels, "
-    "not update_centers, so they never change which centers are shown",
-    strict=True,
 )
 def test_ctrl_hides_centers_of_channel(
     monkeypatch: pytest.MonkeyPatch,

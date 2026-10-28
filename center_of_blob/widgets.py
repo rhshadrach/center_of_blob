@@ -84,8 +84,9 @@ def create_show_center_checkboxes(
     result = []
     for k in range(n_channels):
         check_box = QCheckBox(f"Channel {k}")
-        check_box.setChecked(k == 0)
-        check_box.stateChanged.connect(lambda: main_window.update_channels())
+        # All centers are shown at first; channel 0's checkbox isn't displayed.
+        check_box.setChecked(k != 0)
+        check_box.stateChanged.connect(lambda: main_window.update_centers())
         result.append(check_box)
     return result
 

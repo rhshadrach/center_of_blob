@@ -187,9 +187,6 @@ class MainWindow(QMainWindow):
                 f"Failed to load file\n\n{path}\n\nError message:\n\n{err}"
             )
         else:
-            self.state = "none"
-            self.center_colors = "normal"
-            self.show_centers = [1, 2, 3]
             self.has_img = True
             self.filename = str(path)
             self.setWindowTitle(f"Center of Blob - {path.parts[-1]}")
@@ -204,10 +201,23 @@ class MainWindow(QMainWindow):
                 self.show_channels[0].setDisabled(False)
                 self.brightness[0].setDisabled(False)
             self.label._cache = None
-            self.current_region = None
             self.regions = []
-            self.colors = {0: False, 1: False, 2: False}
+            self.reset_controls()
             self.label.update_image()
+
+    def reset_controls(self) -> None:
+        """End any mode and return the drawing controls to their defaults."""
+        # Clear the region first so ending the mode doesn't ask to name it.
+        self.current_region = None
+        self.state = "none"
+        self.update_state_buttons()
+        # Set the checkboxes rather than the fields so the two can't disagree;
+        # their handlers update colors and show_centers.
+        for checkbox in self.mouse_colors:
+            checkbox.setChecked(False)
+        for checkbox in self.show_center_checkboxes[1:]:
+            checkbox.setChecked(True)
+        self.center_colors = "normal"
 
     def read_regions(self, data: pd.DataFrame) -> list[Region]:
         regions = []
@@ -273,10 +283,7 @@ class MainWindow(QMainWindow):
         self.origin = new_origin
         self.centers = new_centers
         self.regions = new_regions
-        self.current_region = None
-        self.colors = {0: False, 1: False, 2: False}
-        self.show_centers = [1, 2, 3]
-        self.center_colors = "normal"
+        self.reset_controls()
         self.label.update_image()
 
     @require_image
@@ -530,6 +537,8 @@ class MainWindow(QMainWindow):
             self.label.update_image()
         elif event.key() == Qt.Key_T:
             self.enable_tooltip = not self.enable_tooltip
+            if not self.enable_tooltip:
+                self.label.setToolTip("")
         elif event.key() == Qt.Key_Question:
             print("*" * 20, "  Debug Information  ", "*" * 20)
             print("Centers:")

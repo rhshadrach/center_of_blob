@@ -198,9 +198,7 @@ def window_accept() -> None:
 def check_invariants(main: MainWindow) -> list[str]:
     """Return the ways in which ``main``'s state is inconsistent.
 
-    These should hold after any sequence of user actions. The show-centers
-    checkboxes are left out: they never match ``main.show_centers``, which
-    test_view.py::test_show_centers_checkboxes_match_at_startup covers.
+    These should hold after any sequence of user actions.
     """
     problems = []
     for name, button in main.button_states.items():
@@ -215,6 +213,11 @@ def check_invariants(main: MainWindow) -> list[str]:
     checked = {k: box.isChecked() for k, box in enumerate(main.mouse_colors)}
     if checked != main.colors:
         problems.append(f"color checkboxes {checked} != colors {main.colors}")
+    shown = [k for k in range(1, 4) if main.show_center_checkboxes[k].isChecked()]
+    if shown != main.show_centers:
+        problems.append(
+            f"show-center checkboxes {shown} != show_centers {main.show_centers}"
+        )
     if main.has_img:
         shape = main.channels[0].shape
         if not main.centers.are_in_img(shape):

@@ -208,9 +208,6 @@ def test_loading_new_image_resets_work(
     actions.click_modify_centers(qtbot, main)
     actions.click_color_channel(qtbot, main, channel=1)
     actions.click_main_image(qtbot, main, [(100, 100)])
-    # Untick the color first; reloading doesn't clear the checkboxes, which
-    # test_loading_image_keeps_color_checkboxes_in_sync covers.
-    actions.click_color_channel(qtbot, main, channel=1)
     actions.click_modify_centers(qtbot, main)
 
     actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
@@ -220,10 +217,6 @@ def test_loading_new_image_resets_work(
 
 
 @pytest.mark.parametrize("mode", ["set_origin", "modify_centers", "draw_region"])
-@pytest.mark.xfail(
-    reason="Loading an image resets the mode but not the mode buttons' text",
-    strict=True,
-)
 def test_loading_image_mid_mode_resets_buttons(
     monkeypatch: pytest.MonkeyPatch, qtbot: pytestqt.qtbot.QtBot, mode: str
 ) -> None:
@@ -235,10 +228,6 @@ def test_loading_image_mid_mode_resets_buttons(
     assert_consistent(main)
 
 
-@pytest.mark.xfail(
-    reason="Loading an image clears the drawing colors but not their checkboxes",
-    strict=True,
-)
 def test_loading_image_keeps_color_checkboxes_in_sync(
     monkeypatch: pytest.MonkeyPatch, qtbot: pytestqt.qtbot.QtBot
 ) -> None:
@@ -249,10 +238,6 @@ def test_loading_image_keeps_color_checkboxes_in_sync(
     assert_consistent(main)
 
 
-@pytest.mark.xfail(
-    reason="Loading a centers file mid-region clears the region but not the mode",
-    strict=True,
-)
 def test_loading_centers_while_drawing_region(
     monkeypatch: pytest.MonkeyPatch, qtbot: pytestqt.qtbot.QtBot
 ) -> None:
@@ -264,3 +249,36 @@ def test_loading_centers_while_drawing_region(
     assert_consistent(main)
     # Continuing to draw must not fail.
     actions.click_main_image(qtbot, main, [(110, 90)])
+
+
+@pytest.mark.parametrize("mode", ["set_origin", "modify_centers", "draw_region"])
+def test_loading_centers_mid_mode_ends_it(
+    monkeypatch: pytest.MonkeyPatch, qtbot: pytestqt.qtbot.QtBot, mode: str
+) -> None:
+    main = actions.setup_test(qtbot)
+    actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
+    getattr(actions, f"click_{mode}")(qtbot, main)
+    actions.load_csv(monkeypatch, qtbot, main, "data/sample.csv")
+    assert main.state == "none"
+    assert_consistent(main)
+
+
+@pytest.mark.parametrize("load", ["image", "centers"])
+def test_loading_mid_region_discards_it_without_asking(
+    monkeypatch: pytest.MonkeyPatch, qtbot: pytestqt.qtbot.QtBot, load: str
+) -> None:
+    main = actions.setup_test(qtbot)
+    actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
+    actions.click_draw_region(qtbot, main)
+    actions.click_main_image(qtbot, main, SQUARE)
+
+    def get_text(*args: object) -> tuple[str, bool]:
+        raise AssertionError("asked for a region name")
+
+    monkeypatch.setattr(actions.QInputDialog, "getText", get_text)
+    if load == "image":
+        actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
+    else:
+        actions.load_csv(monkeypatch, qtbot, main, "data/sample.csv")
+    assert main.regions == []
+    assert_consistent(main)
