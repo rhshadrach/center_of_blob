@@ -198,6 +198,10 @@ class MainWindow(QMainWindow):
                 self.show_channels[0].setDisabled(True)
                 self.brightness[0].setDisabled(True)
             else:
+                if not self.show_channels[0].isEnabled():
+                    # The previous image disabled channel 0; show it again, as
+                    # when an image is opened at startup.
+                    self.show_channels[0].setChecked(True)
                 self.show_channels[0].setDisabled(False)
                 self.brightness[0].setDisabled(False)
             self.label._cache = None
@@ -351,17 +355,32 @@ class MainWindow(QMainWindow):
     @require_image
     def stop_drawing_region(self) -> None:
         assert self.current_region is not None
-        self.current_region.close()
-        if len(self.current_region) > 0:
-            name, _done = QtWidgets.QInputDialog.getText(
+        region = self.current_region
+        self.current_region = None
+        region.close()
+        if len(region) > 0:
+            name = self.ask_region_name()
+            if name is not None:
+                region.name = name
+                self.regions.append(region)
+                self.classify_centers_by_regions()
+        self.label.update_image()
+
+    def ask_region_name(self) -> str | None:
+        """Ask for a new region's name, or return None if the user cancels."""
+        names = {region.name for region in self.regions}
+        while True:
+            name, ok = QtWidgets.QInputDialog.getText(
                 self, "Name Region", "Enter region name:"
             )
-            self.current_region.name = name
-            self.regions.append(self.current_region)
-            self.classify_centers_by_regions()
-
-            self.label.update_image()
-        self.current_region = None
+            if not ok:
+                return None
+            if not name.strip():
+                continue
+            if name in names:
+                popups.error_msg(f"A region named {name!r} already exists.")
+                continue
+            return name
 
     @require_image
     def update_state_buttons(self) -> None:
@@ -449,9 +468,6 @@ class MainWindow(QMainWindow):
         self, source: QtCore.QObject, event: QtGui.QMouseEvent
     ) -> None:
         if not self.has_img:
-            return
-        if not self.enable_tooltip:
-            self.label.setToolTip("")
             return
         point = self.mouse_to_pixel(event.pos().x(), event.pos().y())
         if not self.channels.pixel_in_image(point):
