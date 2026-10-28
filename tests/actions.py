@@ -4,9 +4,10 @@ from collections.abc import Generator
 
 import pytest
 import pytestqt.qtbot
-from PyQt5 import QtCore
+from PyQt5 import QtCore, QtGui
 from PyQt5.QtWidgets import QApplication, QInputDialog, QMessageBox
 
+import center_of_blob.testing as tm
 from center_of_blob import popups
 from center_of_blob.main import MainWindow
 from tests import data
@@ -82,6 +83,78 @@ def click_main_image(
         qtbot.mouseClick(main.label.label, QtCore.Qt.LeftButton, pos=pos)
 
 
+def right_click_main_image(
+    qtbot: pytestqt.qtbot.QtBot, main: MainWindow, points: list[tuple[int, int]]
+) -> None:
+    for point in points:
+        pos = QtCore.QPoint(*point)
+        qtbot.mouseClick(main.label.label, QtCore.Qt.RightButton, pos=pos)
+
+
+def pixel_at(main: MainWindow, pos: tuple[int, int]) -> tuple[int, int]:
+    """Image pixel (row, column) under the widget position ``pos`` (x, y).
+
+    Unlike ``tm.pos_to_pixel``, this is correct when x != y.
+    """
+    return tm.pos_to_pixel((pos[1], pos[0]), main)
+
+
+def draw_region(
+    monkeypatch: pytest.MonkeyPatch,
+    qtbot: pytestqt.qtbot.QtBot,
+    main: MainWindow,
+    points: list[tuple[int, int]],
+    name: str,
+    accepted: bool = True,
+) -> None:
+    """Draw a region and answer the region name dialog with ``name``."""
+    monkeypatch.setattr(QInputDialog, "getText", lambda *args: (name, accepted))
+    click_draw_region(qtbot, main)
+    click_main_image(qtbot, main, points)
+    click_draw_region(qtbot, main)
+
+
+def press_key(
+    monkeypatch: pytest.MonkeyPatch,
+    qtbot: pytestqt.qtbot.QtBot,
+    main: MainWindow,
+    key: QtCore.Qt.Key,
+    ctrl: bool = False,
+) -> None:
+    # MainWindow reads the global modifier state rather than the event's.
+    modifiers = QtCore.Qt.ControlModifier if ctrl else QtCore.Qt.NoModifier
+    monkeypatch.setattr(QApplication, "keyboardModifiers", lambda: modifiers)
+    qtbot.keyClick(main, key, modifiers)
+
+
+def move_mouse(main: MainWindow, point: tuple[int, int]) -> None:
+    event = QtGui.QMouseEvent(
+        QtCore.QEvent.MouseMove,
+        QtCore.QPointF(*point),
+        QtCore.Qt.NoButton,
+        QtCore.Qt.NoButton,
+        QtCore.Qt.NoModifier,
+    )
+    QApplication.sendEvent(main.label.label, event)
+
+
+def ctrl_scroll(monkeypatch: pytest.MonkeyPatch, main: MainWindow, delta: int) -> None:
+    monkeypatch.setattr(
+        QApplication, "keyboardModifiers", lambda: QtCore.Qt.ControlModifier
+    )
+    event = QtGui.QWheelEvent(
+        QtCore.QPointF(5, 5),
+        QtCore.QPointF(5, 5),
+        QtCore.QPoint(0, 0),
+        QtCore.QPoint(0, delta),
+        QtCore.Qt.NoButton,
+        QtCore.Qt.ControlModifier,
+        QtCore.Qt.NoScrollPhase,
+        False,
+    )
+    QApplication.sendEvent(main.label.label, event)
+
+
 @contextlib.contextmanager
 def setup_close_message_box(qtbot: pytestqt.qtbot.QtBot) -> Generator[None, None, None]:
     QtCore.QTimer.singleShot(500, ft.partial(close_message_box, qtbot))
@@ -120,3 +193,38 @@ def window_accept() -> None:
     window = QApplication.activeWindow()
     if isinstance(window, QMessageBox):
         window.accept()
+
+
+def check_invariants(main: MainWindow) -> list[str]:
+    """Return the ways in which ``main``'s state is inconsistent.
+
+    These should hold after any sequence of user actions. The show-centers
+    checkboxes are left out: they never match ``main.show_centers``, which
+    test_view.py::test_show_centers_checkboxes_match_at_startup covers.
+    """
+    problems = []
+    for name, button in main.button_states.items():
+        label_text = name.replace("_", " ")
+        expected = f"Stop {label_text}" if main.state == name else f"Start {label_text}"
+        if button.text() != expected:
+            problems.append(f"{name} button reads {button.text()!r} in {main.state!r}")
+    if (main.state == "drawing_region") != (main.current_region is not None):
+        problems.append(
+            f"state is {main.state!r} but current_region is {main.current_region!r}"
+        )
+    checked = {k: box.isChecked() for k, box in enumerate(main.mouse_colors)}
+    if checked != main.colors:
+        problems.append(f"color checkboxes {checked} != colors {main.colors}")
+    if main.has_img:
+        shape = main.channels[0].shape
+        if not main.centers.are_in_img(shape):
+            problems.append("a center is outside the image")
+        for point, center in main.centers.items():
+            names = [r.name for r in main.regions if r.contains(point)]
+            expected_region = names[0] if names else ""
+            if center.region != expected_region:
+                problems.append(
+                    f"center {point} has region {center.region!r}, "
+                    f"expected {expected_region!r}"
+                )
+    return problems
