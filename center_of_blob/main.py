@@ -221,7 +221,7 @@ class MainWindow(QMainWindow):
         path = popups.get_centers_filename(main_window=self, directory=mypath)
         try:
             data = pd.read_csv(path)
-            values = data[data["kind"] == "center"].query("distance > 0")
+            values = data[data["kind"] == "center"]
             new_centers = Centers()
             for _, row in values.iterrows():
                 new_centers[row.x, row.y] = Center(
