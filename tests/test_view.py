@@ -134,10 +134,6 @@ def test_tooltip_shows_region_name(
     assert main.label.toolTip() == ""
 
 
-@pytest.mark.xfail(
-    reason="Turning tooltips off with T leaves the last tooltip in place",
-    strict=True,
-)
 def test_disabling_tooltip_clears_it(
     monkeypatch: pytest.MonkeyPatch, qtbot: pytestqt.qtbot.QtBot
 ) -> None:
@@ -150,10 +146,6 @@ def test_disabling_tooltip_clears_it(
     assert main.label.toolTip() == ""
 
 
-@pytest.mark.xfail(
-    reason="Show-centers checkboxes start unchecked while all centers are shown",
-    strict=True,
-)
 def test_show_centers_checkboxes_match_at_startup(
     monkeypatch: pytest.MonkeyPatch, qtbot: pytestqt.qtbot.QtBot
 ) -> None:
@@ -161,3 +153,13 @@ def test_show_centers_checkboxes_match_at_startup(
     actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
     shown = [k for k in range(1, 4) if main.show_center_checkboxes[k].isChecked()]
     assert shown == main.show_centers
+
+
+@pytest.mark.parametrize("channel", [1, 2, 3])
+def test_toggle_show_centers_before_loading_image(
+    qtbot: pytestqt.qtbot.QtBot, error_messages: list[str], channel: int
+) -> None:
+    main = actions.setup_test(qtbot)
+    qtbot.mouseClick(main.show_center_checkboxes[channel], Qt.LeftButton)
+    assert error_messages == []
+    assert channel not in main.show_centers
