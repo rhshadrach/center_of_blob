@@ -176,10 +176,6 @@ def test_write_csv_requires_center(
     assert not (tmp_path / "out.csv").exists()
 
 
-@pytest.mark.xfail(
-    reason="Cancelling the save dialog passes '' to DataFrame.to_csv, which raises",
-    strict=True,
-)
 def test_cancel_save_dialog(
     monkeypatch: pytest.MonkeyPatch,
     qtbot: pytestqt.qtbot.QtBot,

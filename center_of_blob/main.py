@@ -572,6 +572,9 @@ class MainWindow(QMainWindow):
         name = popups.get_csv_save_filename(
             main_window=self, directory=suggested_filename
         )
+        if not name:
+            # The user cancelled the dialog.
+            return
 
         pd.DataFrame(
             data,
