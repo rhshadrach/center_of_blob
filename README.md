@@ -29,8 +29,9 @@ CELLCENSUS_IMAGE_PATH=path/to/image.tif cellcensus
 For real data to try the app on, see [Examples](#examples). The files are in the
 repository's `examples/` folder, which `pip install` doesn't download.
 
-A Windows executable is built by the "Build EXE" GitHub Actions workflow;
-download the `cellcensus-exe` artifact from a run on `main`.
+Each [release](https://github.com/rhshadrach/CellCensus/releases) also has a
+Windows executable, `CellCensus_<version>.exe`, that runs without installing
+Python, and the wheel.
 
 ## Usage
 
@@ -128,3 +129,12 @@ uv run prek install
 uv run pytest tests
 uv run cellcensus
 ```
+
+## Releasing
+
+1. Merge a PR that updates `cellcensus/VERSION`.
+2. In the Actions tab, run the "Release" workflow on `main`. It builds the
+   wheel and the Windows executable, smoke-tests both, and creates a draft
+   release with them attached and with generated release notes.
+3. On the Releases page, review the draft and click **Publish release**, which
+   also creates the `v<version>` tag.
