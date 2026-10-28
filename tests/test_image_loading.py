@@ -29,6 +29,7 @@ def test_failed_image(
     actions.load_image(monkeypatch, qtbot, main, filename)
     assert main.filename == data.resolve_path(filename)
 
+    before = actions.snapshot(main)
     with actions.setup_close_message_box(qtbot):
         actions.load_image(monkeypatch, qtbot, main, "invalid_file.png")
-    assert main.filename == data.resolve_path(filename)
+    assert actions.snapshot(main) == before
