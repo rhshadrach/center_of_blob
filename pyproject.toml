@@ -9,7 +9,7 @@ authors = [
 ]
 description = "Mark and count blob centers, such as cells, in multichannel microscopy images"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 license = {text = "BSD-3-Clause"}
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -19,7 +19,7 @@ dependencies = [
     "matplotlib",
     "numpy",
     "pandas",
-    "pillow",
+    "pillow>=13",
     "PyQt5",
     "scikit-image",
     "scikit-learn",

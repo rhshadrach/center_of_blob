@@ -126,7 +126,7 @@ class ScrollLabel(QScrollArea):
 
         height, width, _channel = arr.shape
         bytes_per_line = 3 * width
-        new_image = QtGui.QImage(  # type: ignore[call-overload]
+        new_image = QtGui.QImage(  # ty: ignore[no-matching-overload]
             arr, width, height, bytes_per_line, QtGui.QImage.Format_RGB888
         )
         new_pixmap = QtGui.QPixmap.fromImage(new_image)

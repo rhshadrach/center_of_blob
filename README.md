@@ -8,7 +8,7 @@ file that can be loaded again later to continue or check the work.
 
 ## Installation
 
-CellCensus needs Python 3.10 or newer. Install it from GitHub:
+CellCensus needs Python 3.12 or newer. Install it from GitHub:
 
 ```bash
 pip install git+https://github.com/rhshadrach/CellCensus.git
