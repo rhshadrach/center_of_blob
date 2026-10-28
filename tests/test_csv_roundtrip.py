@@ -82,10 +82,6 @@ def test_round_trip_center_at_origin(
     assert reloaded.centers.keys() == {(50, 50)}
 
 
-@pytest.mark.xfail(
-    reason="A center with no region is loaded with region NaN instead of ''",
-    strict=True,
-)
 def test_loaded_center_without_region(
     monkeypatch: pytest.MonkeyPatch, qtbot: pytestqt.qtbot.QtBot
 ) -> None:
@@ -95,47 +91,99 @@ def test_loaded_center_without_region(
     assert [center.region for center in main.centers.values()] == ["", ""]
 
 
-@pytest.mark.xfail(
-    reason="Regions are grouped by name on load, so same-named regions merge",
-    strict=True,
-)
-def test_round_trip_regions_with_same_name(
+@pytest.mark.parametrize("name", ["NA", "nan", "12", "None"])
+def test_round_trip_region_name_kept_as_written(
+    monkeypatch: pytest.MonkeyPatch,
+    qtbot: pytestqt.qtbot.QtBot,
+    tmp_path: Path,
+    name: str,
+) -> None:
+    main = actions.setup_test(qtbot)
+    actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
+    main.origin = (50, 50)
+    main.centers = cob.Centers({(20, 20): cob.Center(20, 20, (255, 0, 0), name)})
+    main.regions = [cob.Region([(10, 10), (10, 40), (40, 40), (10, 10)], name)]
+    reloaded = write_and_reload(monkeypatch, qtbot, main, tmp_path / "out.csv")
+    assert [region.name for region in reloaded.regions] == [name]
+    assert reloaded.centers[20, 20].region == name
+
+
+def test_round_trip_keeps_region_order(
     monkeypatch: pytest.MonkeyPatch, qtbot: pytestqt.qtbot.QtBot, tmp_path: Path
 ) -> None:
+    # When regions overlap, the first one decides a center's region, so the
+    # order they were drawn in must survive a round trip.
     main = actions.setup_test(qtbot)
     actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
     main.origin = (50, 50)
     main.centers = cob.Centers({(20, 30): cob.Center(20, 30, (255, 0, 0), "")})
     main.regions = [
-        cob.Region([(10, 10), (10, 40), (40, 40), (10, 10)], "a"),
+        cob.Region([(10, 10), (10, 40), (40, 40), (10, 10)], "b"),
         cob.Region([(100, 100), (100, 140), (140, 140), (100, 100)], "a"),
     ]
     reloaded = write_and_reload(monkeypatch, qtbot, main, tmp_path / "out.csv")
-    assert [r.points for r in reloaded.regions] == [r.points for r in main.regions]
+    assert [(r.name, r.points) for r in reloaded.regions] == [
+        (r.name, r.points) for r in main.regions
+    ]
 
 
-@pytest.mark.xfail(
-    reason="A region with an empty name is written with a blank name and "
-    "dropped on load",
-    strict=True,
-)
-def test_round_trip_region_with_empty_name(
-    monkeypatch: pytest.MonkeyPatch, qtbot: pytestqt.qtbot.QtBot, tmp_path: Path
+def test_load_unclosed_region(
+    monkeypatch: pytest.MonkeyPatch,
+    qtbot: pytestqt.qtbot.QtBot,
+    tmp_path: Path,
+    error_messages: list[str],
 ) -> None:
+    # A hand-written file whose regions don't repeat their first point.
+    path = tmp_path / "unclosed.csv"
+    path.write_text(
+        "kind,x,y,distance,red,green,blue,region\n"
+        "origin,10,10,0.0,0,0,0,\n"
+        "center,20,30,5.0,255,0,0,a\n"
+        "region,10,10,-1,255,69,0,a\n"
+        "region,10,40,-1,255,69,0,a\n"
+        "region,40,40,-1,255,69,0,a\n"
+        "region,100,100,-1,255,69,0,b\n"
+        "region,100,140,-1,255,69,0,b\n"
+        "region,140,140,-1,255,69,0,b\n"
+    )
     main = actions.setup_test(qtbot)
     actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
-    main.origin = (50, 50)
-    main.centers = cob.Centers({(20, 30): cob.Center(20, 30, (255, 0, 0), "")})
-    main.regions = [cob.Region([(10, 10), (10, 40), (40, 40), (10, 10)], "")]
-    reloaded = write_and_reload(monkeypatch, qtbot, main, tmp_path / "out.csv")
-    assert len(reloaded.regions) == 1
+    actions.load_csv(monkeypatch, qtbot, main, str(path))
+    assert error_messages == []
+    assert [(r.name, r.points) for r in main.regions] == [
+        ("a", [(10, 10), (10, 40), (40, 40)]),
+        ("b", [(100, 100), (100, 140), (140, 140)]),
+    ]
 
 
-@pytest.mark.xfail(
-    int(pd.__version__.split(".")[0]) >= 3,
-    reason="The origin row has fewer values than columns, which pandas 3 deprecates",
-    strict=True,
+@pytest.mark.parametrize(
+    "clicks",
+    [SQUARE + [SQUARE[0]], [SQUARE[0], *SQUARE], [*SQUARE[:2], *SQUARE[1:]]],
+    ids=["click_start_to_close", "start_clicked_twice", "corner_clicked_twice"],
 )
+def test_round_trip_region_with_repeated_clicks(
+    monkeypatch: pytest.MonkeyPatch,
+    qtbot: pytestqt.qtbot.QtBot,
+    tmp_path: Path,
+    error_messages: list[str],
+    clicks: list[tuple[int, int]],
+) -> None:
+    # Repeated clicks on one pixel must not look like two regions sharing a name.
+    main = actions.setup_test(qtbot)
+    actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
+    actions.click_set_origin(qtbot, main)
+    actions.click_main_image(qtbot, main, [(50, 50)])
+    actions.draw_region(monkeypatch, qtbot, main, clicks, "a")
+    actions.click_modify_centers(qtbot, main)
+    actions.click_color_channel(qtbot, main, channel=1)
+    actions.click_main_image(qtbot, main, [(300, 300)])
+    reloaded = write_and_reload(monkeypatch, qtbot, main, tmp_path / "out.csv")
+    assert error_messages == []
+    assert [(r.name, r.points) for r in reloaded.regions] == [
+        (r.name, r.points) for r in main.regions
+    ]
+
+
 def test_write_csv_has_no_warnings(
     monkeypatch: pytest.MonkeyPatch, qtbot: pytestqt.qtbot.QtBot, tmp_path: Path
 ) -> None:
@@ -227,17 +275,46 @@ def test_load_centers_outside_image(
     assert actions.snapshot(main) == before
 
 
-@pytest.mark.parametrize(
-    "contents",
-    [
-        "origin,10,10,0.0,0,0,0,\ncenter,99999,10,5.0,255,0,0,\n",
-        "center,20,30,5.0,255,0,0,\n",
-    ],
-    ids=["center_outside_image", "no_origin"],
+ORIGIN = "origin,10,10,0.0,0,0,0,\n"
+SQUARE_A = (
+    "region,10,10,-1,255,69,0,a\n"
+    "region,10,40,-1,255,69,0,a\n"
+    "region,40,40,-1,255,69,0,a\n"
+    "region,10,10,-1,255,69,0,a\n"
 )
-@pytest.mark.xfail(
-    reason="Refusing a centers file still discards the existing work",
-    strict=True,
+SQUARE_B = SQUARE_A.replace(",a\n", ",b\n")
+OTHER_A = (
+    "region,100,100,-1,255,69,0,a\n"
+    "region,100,140,-1,255,69,0,a\n"
+    "region,140,140,-1,255,69,0,a\n"
+    "region,100,100,-1,255,69,0,a\n"
+)
+
+
+@pytest.mark.parametrize(
+    ("contents", "reason"),
+    [
+        (
+            "origin,10,10,0.0,0,0,0,\ncenter,99999,10,5.0,255,0,0,\n",
+            "outside of image bounds",
+        ),
+        ("center,20,30,5.0,255,0,0,\n", "Failed to find origin"),
+        (ORIGIN + SQUARE_A.replace(",a\n", ",\n"), "A region has an empty name."),
+        (ORIGIN + SQUARE_A.replace(",a\n", ", \n"), "A region has an empty name."),
+        (ORIGIN + SQUARE_A + OTHER_A, "More than one region is named 'a'."),
+        (
+            ORIGIN + SQUARE_A + SQUARE_B + OTHER_A,
+            "More than one region is named 'a'.",
+        ),
+    ],
+    ids=[
+        "center_outside_image",
+        "no_origin",
+        "empty_region_name",
+        "blank_region_name",
+        "shared_region_name_adjacent",
+        "shared_region_name_apart",
+    ],
 )
 def test_refused_centers_file_keeps_existing_work(
     monkeypatch: pytest.MonkeyPatch,
@@ -245,6 +322,7 @@ def test_refused_centers_file_keeps_existing_work(
     tmp_path: Path,
     error_messages: list[str],
     contents: str,
+    reason: str,
 ) -> None:
     path = tmp_path / "refused.csv"
     path.write_text("kind,x,y,distance,red,green,blue,region\n" + contents)
@@ -256,6 +334,7 @@ def test_refused_centers_file_keeps_existing_work(
     before = actions.snapshot(main)
     actions.load_csv(monkeypatch, qtbot, main, str(path))
     assert len(error_messages) == 1
+    assert reason in error_messages[0]
     assert actions.snapshot(main) == before
 
 
