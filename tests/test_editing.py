@@ -186,6 +186,17 @@ def test_three_frame_image_disables_channel_0(
     assert actions.snapshot(main) == actions.snapshot(fresh)
 
 
+def test_three_frame_image_channel_order(
+    monkeypatch: pytest.MonkeyPatch, qtbot: pytestqt.qtbot.QtBot, tmp_path
+) -> None:
+    # Frames 0, 1, 2 hold green, blue, red; channel 0 repeats red.
+    path = str(tmp_path / "three.tif")
+    three_frame_tiff(path)
+    main = actions.setup_test(qtbot)
+    actions.load_image(monkeypatch, qtbot, main, path)
+    assert [int(main.channels[k][0, 0]) for k in range(4)] == [3, 3, 1, 2]
+
+
 def test_reloading_keeps_unticked_channel_0(
     monkeypatch: pytest.MonkeyPatch, qtbot: pytestqt.qtbot.QtBot
 ) -> None:
