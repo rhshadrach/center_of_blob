@@ -1,6 +1,9 @@
+from pathlib import Path
+
 import pytest
 import pytestqt.qtbot
 
+from cellcensus.main import except_hook
 from tests import actions, data
 
 
@@ -48,3 +51,20 @@ def test_window_title_filename(
     path = data.resolve_path(filename)
     assert main.filename == path
     assert main.windowTitle() == "CellCensus - sample.tif"
+
+
+def test_except_hook_writes_log(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, error_messages: list[str]
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    try:
+        raise ValueError("boom")
+    except ValueError as err:
+        except_hook(type(err), err, err.__traceback__)
+    (log,) = tmp_path.glob("cellcensus_error_*.log")
+    # Windows doesn't allow colons in filenames.
+    assert ":" not in log.name
+    assert "ValueError" in log.read_text()
+    assert "boom" in log.read_text()
+    assert len(error_messages) == 1
+    assert log.name in error_messages[0]

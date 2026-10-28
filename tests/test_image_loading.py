@@ -16,20 +16,22 @@ def test_load_image(
 
 
 def test_failed_image(
-    monkeypatch: pytest.MonkeyPatch, qtbot: pytestqt.qtbot.QtBot
+    monkeypatch: pytest.MonkeyPatch,
+    qtbot: pytestqt.qtbot.QtBot,
+    error_messages: list[str],
 ) -> None:
     filename = "data/sample.tif"
     main = actions.setup_test(qtbot)
 
-    actions.setup_close_message_box(qtbot)
-    with actions.setup_close_message_box(qtbot):
-        actions.load_image(monkeypatch, qtbot, main, "invalid_file.png")
+    actions.load_image(monkeypatch, qtbot, main, "invalid_file.png")
+    assert len(error_messages) == 1
+    assert error_messages[0].startswith("Failed to load file")
     assert main.filename is None
 
     actions.load_image(monkeypatch, qtbot, main, filename)
     assert main.filename == data.resolve_path(filename)
 
     before = actions.snapshot(main)
-    with actions.setup_close_message_box(qtbot):
-        actions.load_image(monkeypatch, qtbot, main, "invalid_file.png")
+    actions.load_image(monkeypatch, qtbot, main, "invalid_file.png")
+    assert len(error_messages) == 2
     assert actions.snapshot(main) == before

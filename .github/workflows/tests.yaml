@@ -13,15 +13,16 @@ permissions:
 
 jobs:
   tests:
-    name: tests (Python ${{ matrix.python-version }})
-    runs-on: ubuntu-22.04
+    name: tests (${{ matrix.os }}, Python ${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
+        os: [ubuntu-22.04, windows-latest]
         python-version: ["3.12", "3.13", "3.14"]
     concurrency:
-      group: ${{ github.workflow }}-${{ github.ref }}-${{ matrix.python-version }}
+      group: ${{ github.workflow }}-${{ github.ref }}-${{ matrix.os }}-${{ matrix.python-version }}
       cancel-in-progress: ${{ github.event_name == 'pull_request' }}
     steps:
       - name: Setup
@@ -32,8 +33,4 @@ jobs:
           system-dependencies: true
 
       - name: Run tests
-        env:
-          QT_DEBUG_PLUGINS: 1
-        run: |
-          ulimit -c unlimited
-          uv run pytest tests --durations 20
+        run: uv run pytest tests --durations 20
