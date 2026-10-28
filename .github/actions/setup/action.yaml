@@ -1,0 +1,52 @@
+name: Setup
+description: Setup environment for workflows
+
+inputs:
+  groups:
+    description: Space-separated dependency groups to install, e.g. "test" or "lint exe".
+    required: false
+    default: ""
+  python-version:
+    description: Python version to install.
+    required: false
+    default: "3.10"
+  system-dependencies:
+    description: Install the Qt system packages needed to run the GUI (Linux only).
+    required: false
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      with:
+        persist-credentials: false
+
+    - name: Install system dependencies
+      if: inputs.system-dependencies == 'true' && runner.os == 'Linux'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y pyqt5-dev-tools
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e  # v10.3.2
+      with:
+        python-version: ${{ inputs.python-version }}
+        enable-cache: true
+        cache-dependency-glob: uv.lock
+
+    - name: Install dependencies
+      shell: bash
+      env:
+        DEPENDENCY_GROUPS: ${{ inputs.groups }}
+      run: |
+        # uv installs the `dev` group by default; only install what was requested.
+        args=(--no-default-groups)
+        for group in $DEPENDENCY_GROUPS; do
+          args+=(--group "$group")
+        done
+        uv sync --locked "${args[@]}"
+        # Otherwise later `uv run` calls re-sync and add the `dev` group.
+        echo "UV_NO_SYNC=1" >> "$GITHUB_ENV"

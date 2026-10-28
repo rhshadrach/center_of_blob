@@ -1,0 +1,175 @@
+#:schema https://www.schemastore.org/prek.json
+
+# Hooks that fix files do so locally (the `pre-commit` stage). CI runs the
+# `manual` stage, where these only report, so line numbers in other hooks'
+# output stay correct.
+[[repos]]
+repo = "builtin"
+
+[[repos.hooks]]
+id = "trailing-whitespace"
+stages = ["pre-commit"]
+
+[[repos.hooks]]
+id = "trailing-whitespace"
+alias = "trailing-whitespace-ci"
+args = ["--check"]
+stages = ["manual"]
+
+[[repos.hooks]]
+id = "end-of-file-fixer"
+stages = ["pre-commit"]
+
+[[repos.hooks]]
+id = "end-of-file-fixer"
+alias = "end-of-file-fixer-ci"
+args = ["--check"]
+stages = ["manual"]
+
+[[repos.hooks]]
+id = "fix-byte-order-marker"
+stages = ["pre-commit"]
+
+[[repos.hooks]]
+id = "fix-byte-order-marker"
+alias = "fix-byte-order-marker-ci"
+args = ["--check"]
+stages = ["manual"]
+
+[[repos.hooks]]
+id = "pretty-format-json"
+args = ["--autofix", "--no-sort-keys"]
+stages = ["pre-commit"]
+
+[[repos.hooks]]
+id = "pretty-format-json"
+alias = "pretty-format-json-ci"
+args = ["--no-sort-keys"]
+stages = ["manual"]
+
+[[repos]]
+repo = "builtin"
+hooks = [
+    { id = "check-case-conflict" },
+    { id = "check-illegal-windows-names" },
+    { id = "check-json" },
+    { id = "check-yaml" },
+    { id = "check-toml" },
+    { id = "check-merge-conflict" },
+    { id = "detect-private-key" },
+    { id = "no-commit-to-branch" },
+]
+
+[[repos]]
+repo = "https://github.com/pre-commit/pre-commit-hooks"
+rev = "v6.0.0"
+hooks = [
+    { id = "check-docstring-first" },
+    { id = "debug-statements" },
+]
+
+[[repos]]
+repo = "https://github.com/astral-sh/ruff-pre-commit"
+rev = "v0.17.3"
+
+# Fixes locally, only reports in CI; see the comment on the first `builtin` repo.
+[[repos.hooks]]
+id = "ruff-check"
+args = ["--fix"]
+stages = ["pre-commit"]
+
+[[repos.hooks]]
+id = "ruff-check"
+alias = "ruff-check-ci"
+stages = ["manual"]
+
+[[repos.hooks]]
+id = "ruff-format"
+stages = ["pre-commit"]
+
+[[repos.hooks]]
+id = "ruff-format"
+alias = "ruff-format-ci"
+args = ["--check", "--diff"]
+stages = ["manual"]
+
+[[repos]]
+repo = "https://github.com/codespell-project/codespell"
+rev = "v2.4.3"
+hooks = [
+    { id = "codespell", types_or = ["python", "markdown"] },
+]
+
+[[repos]]
+repo = "https://github.com/adrienverge/yamllint"
+rev = "v1.38.0"
+
+[[repos.hooks]]
+id = "yamllint"
+args = [
+    "--config-data",
+    """
+extends: default
+rules:
+  document-start: disable
+  line-length:
+    max: 120
+  truthy:
+    # GitHub Actions uses `on:` as a key.
+    check-keys: false
+""",
+]
+
+[[repos]]
+repo = "https://github.com/srstevenson/nb-clean"
+rev = "v5.0.0"
+
+[[repos.hooks]]
+id = "nb-clean"
+stages = ["pre-commit"]
+
+[[repos.hooks]]
+id = "nb-clean"
+alias = "nb-clean-ci"
+entry = "nb-clean check"
+stages = ["manual"]
+
+[[repos]]
+repo = "https://github.com/DavidAnson/markdownlint-cli2"
+rev = "v0.24.0"
+hooks = [
+    { id = "markdownlint-cli2" },
+]
+
+[[repos]]
+repo = "https://github.com/astral-sh/uv-pre-commit"
+rev = "0.13.6"
+hooks = [
+    { id = "uv-lock" },
+]
+
+[[repos]]
+repo = "https://github.com/rhysd/actionlint"
+rev = "v1.7.12"
+hooks = [
+    { id = "actionlint" },
+]
+
+[[repos]]
+repo = "https://github.com/zizmorcore/zizmor-pre-commit"
+rev = "v1.31.1"
+hooks = [
+    { id = "zizmor" },
+]
+
+[[repos]]
+repo = "local"
+
+# Runs in the project environment so ty can resolve third-party imports.
+[[repos.hooks]]
+id = "ty"
+name = "ty"
+entry = "uv run --active --no-sync ty check"
+language = "system"
+pass_filenames = false
+types = ["python"]

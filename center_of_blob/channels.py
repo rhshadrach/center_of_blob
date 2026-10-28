@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Iterable, Literal
+from collections.abc import Iterable
+from typing import Literal
 
 import numpy as np
 from PIL import Image
@@ -122,7 +123,7 @@ class Channels:
     def as_rgb(self, channels: Iterable[ChannelT]) -> np.ndarray:
         channels = sorted(self._funnel_channel(channel) for channel in channels)
         result = sum(
-            (self._make_channel_data(c) for c in range(0, 4) if c in channels),
+            (self._make_channel_data(c) for c in range(4) if c in channels),
             start=np.zeros((*self._channels[0].shape, 3), dtype="uint8"),
         )
         return result

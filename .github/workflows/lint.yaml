@@ -1,0 +1,40 @@
+name: Lint
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  prek:
+    name: prek
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+    steps:
+      - name: Setup
+        uses: $/.github/actions/setup
+        with:
+          groups: lint
+          # Type-check against the newest dependency versions.
+          python-version: "3.14"
+
+      - name: Cache prek hook environments
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: ~/.cache/prek
+          key: prek-${{ runner.os }}-${{ hashFiles('prek.toml') }}
+
+      - name: Run prek
+        env:
+          # Pushes to main would otherwise fail this hook.
+          SKIP: no-commit-to-branch
+        run: uv run prek run --all-files --stage manual --show-diff-on-failure

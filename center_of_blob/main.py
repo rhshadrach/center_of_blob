@@ -4,9 +4,10 @@ import datetime
 import os
 import sys
 import traceback
-from types import TracebackType
-from typing import TypeVar, ParamSpec, Callable, Concatenate
+from collections.abc import Callable
 from pathlib import Path
+from types import TracebackType
+from typing import Concatenate, ParamSpec, TypeVar
 
 import numpy as np
 import pandas as pd
@@ -21,12 +22,10 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from center_of_blob import widgets
+from center_of_blob import popups, widgets
 from center_of_blob.centers import Center, Centers
 from center_of_blob.channels import N_CHANNELS, Channels
-from center_of_blob import popups
 from center_of_blob.region import Region
-
 
 C = TypeVar("C", bound="MainWindow")
 P = ParamSpec("P")
@@ -329,7 +328,7 @@ class MainWindow(QMainWindow):
         assert self.current_region is not None
         self.current_region.close()
         if len(self.current_region) > 0:
-            name, done1 = QtWidgets.QInputDialog.getText(
+            name, _done = QtWidgets.QInputDialog.getText(
                 self, "Name Region", "Enter region name:"
             )
             self.current_region.name = name

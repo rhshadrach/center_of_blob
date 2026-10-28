@@ -37,11 +37,9 @@ class Region:
             if shortest_distance is None or distance < shortest_distance:
                 shortest_distance = distance
 
-        if shortest_distance is None or (
-            radius is not None and shortest_distance > radius * radius
-        ):
-            return False
-        return True
+        return shortest_distance is not None and (
+            radius is None or shortest_distance <= radius * radius
+        )
 
     def __len__(self) -> int:
         return len(self.points)

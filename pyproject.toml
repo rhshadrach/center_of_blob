@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools", "setuptools-scm"]
+requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -9,7 +9,7 @@ authors = [
 ]
 description = "Center of Blob"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.10"
 license = {text = "BSD-3-Clause"}
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -31,26 +31,36 @@ dynamic = ["version"]
 [tool.setuptools.dynamic]
 version = {file = "center_of_blob/VERSION"}
 
-[project.optional-dependencies]
+[dependency-groups]
 lint = [
-    "codespell",
-    "mypy",
-    "pre-commit",
-    "ruff",
+    "prek",
+    "ty",
+    "vulture",
     # type-stubs
     "PyQt5-stubs",
+    # ty needs the test dependencies to resolve imports in tests/.
+    {include-group = "test"},
 ]
-build = ["pyinstaller"]
+exe = ["pyinstaller"]
 test = ["pytest", "pytest-qt", "pytest-xvfb", "pytest-xdist"]
-dev = ["center_of_blob[lint, build, test]"]
+dev = [
+    {include-group = "lint"},
+    {include-group = "exe"},
+    {include-group = "test"},
+]
 
-[tool.isort]
-profile = "black"
-
+[tool.uv]
+# The lock is shared by all platforms; make sure it installs on the Windows
+# runner that builds the exe. pyqt5-qt5 only has Windows wheels for 5.15.2.
+required-environments = ["sys_platform == 'win32' and platform_machine == 'AMD64'"]
 
 [tool.pytest.ini_options]
 addopts = "-n auto"
 
-[tool.mypy]
-disallow_untyped_defs = true
-ignore_missing_imports = true
+[tool.ruff.lint]
+ignore = ["BLE001"]
+
+[tool.ty.rules]
+# PyQt5-stubs names override parameters `a0`, `ev`, etc.; Qt only ever passes them
+# positionally, so the parameter-name mismatch is not a real error.
+invalid-method-override = "ignore"

@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from PyQt5 import QtCore, QtGui, QtWidgets
 from typing import Any
+
+from PyQt5 import QtCore, QtGui, QtWidgets
 
 # Originated from
 # https://www.mail-archive.com/pyqt@riverbankcomputing.com/msg22889.html
@@ -54,7 +55,7 @@ class RangeSlider(QtWidgets.QSlider):
         self.valueChanged.emit(self._low, self._high)
         self.update()
 
-    def paintEvent(self, event: QtCore.QEvent) -> None:
+    def paintEvent(self, event: QtGui.QPaintEvent) -> None:
         # based on http://qt.gitorious.org/qt/qt/blobs/master/src/gui/widgets/qslider.cpp
 
         painter = QtGui.QPainter(self)

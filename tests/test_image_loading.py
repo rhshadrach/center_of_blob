@@ -1,6 +1,7 @@
-from tests import actions, data
 import pytest
-import pytestqt
+import pytestqt.qtbot
+
+from tests import actions, data
 
 
 def test_load_image(
