@@ -32,8 +32,8 @@ class Channels:
 
         channels = []
         if img.n_frames == 3:
-            img.seek(0)
-            channels.append(np.asarray(img))
+            # 3-frame files store green, blue, red in that order. They have no
+            # base image, so channel 0 repeats red and is disabled.
             img.seek(0)
             green = np.asarray(img)
             img.seek(1)
