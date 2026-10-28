@@ -48,3 +48,5 @@ runs:
           args+=(--group "$group")
         done
         uv sync --locked "${args[@]}"
+        # Otherwise later `uv run` calls re-sync and add the `dev` group.
+        echo "UV_NO_SYNC=1" >> "$GITHUB_ENV"

@@ -38,6 +38,8 @@ lint = [
     "vulture",
     # type-stubs
     "PyQt5-stubs",
+    # ty needs the test dependencies to resolve imports in tests/.
+    {include-group = "test"},
 ]
 exe = ["pyinstaller"]
 test = ["pytest", "pytest-qt", "pytest-xvfb", "pytest-xdist"]
@@ -46,6 +48,11 @@ dev = [
     {include-group = "exe"},
     {include-group = "test"},
 ]
+
+[tool.uv]
+# The lock is shared by all platforms; make sure it installs on the Windows
+# runner that builds the exe. pyqt5-qt5 only has Windows wheels for 5.15.2.
+required-environments = ["sys_platform == 'win32' and platform_machine == 'AMD64'"]
 
 [tool.pytest.ini_options]
 addopts = "-n auto"
