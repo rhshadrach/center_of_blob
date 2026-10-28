@@ -47,6 +47,9 @@ def test_round_trip(
     assert reloaded.centers.keys() == main.centers.keys()
     for point, center in main.centers.items():
         assert reloaded.centers[point].color == center.color
+        # Centers without a region are covered by test_loaded_center_without_region.
+        if center.region:
+            assert reloaded.centers[point].region == center.region
     assert [(r.name, r.points) for r in reloaded.regions] == [
         (r.name, r.points) for r in main.regions
     ]
@@ -190,8 +193,10 @@ def test_cancel_save_dialog(
     actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
     main.origin = (50, 50)
     main.centers = cob.Centers({(20, 30): cob.Center(20, 30, (255, 0, 0), "")})
+    before = actions.snapshot(main)
     actions.save_csv(monkeypatch, qtbot, main, "")
     assert error_messages == []
+    assert actions.snapshot(main) == before
 
 
 @pytest.mark.xfail(
@@ -205,9 +210,11 @@ def test_cancel_load_centers_dialog(
 ) -> None:
     main = actions.setup_test(qtbot)
     actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
+    before = actions.snapshot(main)
     monkeypatch.setattr(cob.popups, "get_centers_filename", lambda *args, **kwargs: "")
     qtbot.mouseClick(main.centers_path_button, actions.QtCore.Qt.LeftButton)
     assert error_messages == []
+    assert actions.snapshot(main) == before
 
 
 def test_load_centers_outside_image(
@@ -224,15 +231,24 @@ def test_load_centers_outside_image(
     )
     main = actions.setup_test(qtbot)
     actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
+    before = actions.snapshot(main)
     actions.load_csv(monkeypatch, qtbot, main, str(path))
     assert error_messages == [
         "Centers file has points outside of image bounds. Refusing file."
     ]
-    assert len(main.centers) == 0
+    assert actions.snapshot(main) == before
 
 
+@pytest.mark.parametrize(
+    "contents",
+    [
+        "origin,10,10,0.0,0,0,0,\ncenter,99999,10,5.0,255,0,0,\n",
+        "center,20,30,5.0,255,0,0,\n",
+    ],
+    ids=["center_outside_image", "no_origin"],
+)
 @pytest.mark.xfail(
-    reason="Refusing a centers file still discards the existing origin and regions",
+    reason="Refusing a centers file still discards the existing work",
     strict=True,
 )
 def test_refused_centers_file_keeps_existing_work(
@@ -240,23 +256,19 @@ def test_refused_centers_file_keeps_existing_work(
     qtbot: pytestqt.qtbot.QtBot,
     tmp_path: Path,
     error_messages: list[str],
+    contents: str,
 ) -> None:
-    path = tmp_path / "outside.csv"
-    path.write_text(
-        "kind,x,y,distance,red,green,blue,region\n"
-        "origin,10,10,0.0,0,0,0,\n"
-        "center,99999,10,5.0,255,0,0,\n"
-    )
+    path = tmp_path / "refused.csv"
+    path.write_text("kind,x,y,distance,red,green,blue,region\n" + contents)
     main = actions.setup_test(qtbot)
     actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
     main.origin = (50, 50)
     main.centers = cob.Centers({(20, 30): cob.Center(20, 30, (255, 0, 0), "")})
     main.regions = [cob.Region([(10, 10), (10, 40), (40, 40), (10, 10)], "a")]
+    before = actions.snapshot(main)
     actions.load_csv(monkeypatch, qtbot, main, str(path))
     assert len(error_messages) == 1
-    assert main.origin == (50, 50)
-    assert list(main.centers) == [(20, 30)]
-    assert [region.name for region in main.regions] == ["a"]
+    assert actions.snapshot(main) == before
 
 
 def test_load_centers_without_origin(
@@ -271,10 +283,11 @@ def test_load_centers_without_origin(
     )
     main = actions.setup_test(qtbot)
     actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
+    before = actions.snapshot(main)
     actions.load_csv(monkeypatch, qtbot, main, str(path))
     assert len(error_messages) == 1
     assert error_messages[0].startswith("Failed to find origin in centers file.")
-    assert len(main.centers) == 0
+    assert actions.snapshot(main) == before
 
 
 def test_load_centers_malformed(
@@ -287,8 +300,11 @@ def test_load_centers_malformed(
     path.write_text("not,a,centers,file\n1,2,3,4\n")
     main = actions.setup_test(qtbot)
     actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
+    main.origin = (50, 50)
     main.centers = cob.Centers({(20, 30): cob.Center(20, 30, (255, 0, 0), "")})
+    main.regions = [cob.Region([(10, 10), (10, 40), (40, 40), (10, 10)], "a")]
+    before = actions.snapshot(main)
     actions.load_csv(monkeypatch, qtbot, main, str(path))
     assert len(error_messages) == 1
     assert error_messages[0].startswith("Failed to load file")
-    assert list(main.centers) == [(20, 30)]
+    assert actions.snapshot(main) == before

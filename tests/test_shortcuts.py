@@ -37,14 +37,16 @@ def test_toggle_drawing_color(
 ) -> None:
     main = actions.setup_test(qtbot)
     actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
+    before = actions.snapshot(main)
 
     actions.press_key(monkeypatch, qtbot, main, key)
-    assert main.mouse_colors[channel].isChecked()
-    assert main.colors == {k: k == channel for k in range(3)}
+    after = actions.snapshot(main)
+    assert actions.changed(before, after) == {"colors", "color_checkboxes"}
+    assert after["colors"] == {k: k == channel for k in range(3)}
+    assert after["color_checkboxes"] == [k == channel for k in range(3)]
 
     actions.press_key(monkeypatch, qtbot, main, key)
-    assert not main.mouse_colors[channel].isChecked()
-    assert main.colors == {0: False, 1: False, 2: False}
+    assert actions.snapshot(main) == before
 
 
 @pytest.mark.parametrize(
@@ -60,13 +62,15 @@ def test_toggle_showing_channel(
 ) -> None:
     main = actions.setup_test(qtbot)
     actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
-    before = main.show_channels[channel].isChecked()
+    before = actions.snapshot(main)
 
     actions.press_key(monkeypatch, qtbot, main, key)
-    assert main.show_channels[channel].isChecked() != before
+    after = actions.snapshot(main)
+    assert actions.changed(before, after) == {"channel_checkboxes"}
+    assert main.show_channels[channel].isChecked() == (channel != 0)
 
     actions.press_key(monkeypatch, qtbot, main, key)
-    assert main.show_channels[channel].isChecked() == before
+    assert actions.snapshot(main) == before
 
 
 @pytest.mark.parametrize(
@@ -80,12 +84,15 @@ def test_ctrl_toggles_show_centers_checkbox(
 ) -> None:
     main = actions.setup_test(qtbot)
     actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
-    before = main.show_center_checkboxes[channel].isChecked()
+    before = actions.snapshot(main)
+    checked = main.show_center_checkboxes[channel].isChecked()
 
     actions.press_key(monkeypatch, qtbot, main, key, ctrl=True)
-    assert main.show_center_checkboxes[channel].isChecked() != before
+    assert main.show_center_checkboxes[channel].isChecked() != checked
     # Ctrl changes which centers are shown, not which channels.
-    assert not main.show_channels[channel].isChecked()
+    changed = actions.changed(before, actions.snapshot(main))
+    assert "show_center_checkboxes" in changed
+    assert changed <= {"show_center_checkboxes", "show_centers"}
 
 
 @pytest.mark.parametrize(
@@ -116,11 +123,14 @@ def test_toggle_black_centers(
 ) -> None:
     main = actions.setup_test(qtbot)
     actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
-    assert main.center_colors == "normal"
+    before = actions.snapshot(main)
+    assert before["center_colors"] == "normal"
     actions.press_key(monkeypatch, qtbot, main, key)
-    assert main.center_colors == "black"
+    after = actions.snapshot(main)
+    assert actions.changed(before, after) == {"center_colors"}
+    assert after["center_colors"] == "black"
     actions.press_key(monkeypatch, qtbot, main, key)
-    assert main.center_colors == "normal"
+    assert actions.snapshot(main) == before
 
 
 def test_toggle_tooltip(
@@ -128,11 +138,14 @@ def test_toggle_tooltip(
 ) -> None:
     main = actions.setup_test(qtbot)
     actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
-    assert main.enable_tooltip
+    before = actions.snapshot(main)
+    assert before["enable_tooltip"]
     actions.press_key(monkeypatch, qtbot, main, Qt.Key_T)
-    assert not main.enable_tooltip
+    after = actions.snapshot(main)
+    assert actions.changed(before, after) == {"enable_tooltip"}
+    assert not after["enable_tooltip"]
     actions.press_key(monkeypatch, qtbot, main, Qt.Key_T)
-    assert main.enable_tooltip
+    assert actions.snapshot(main) == before
 
 
 def test_debug_information(
@@ -158,8 +171,14 @@ def test_shortcuts_before_loading_image(
     key: Qt.Key,
 ) -> None:
     main = actions.setup_test(qtbot)
+    before = actions.snapshot(main)
     actions.press_key(monkeypatch, qtbot, main, key)
     assert error_messages == []
+    assert actions.changed(before, actions.snapshot(main)) <= {
+        "colors",
+        "color_checkboxes",
+        "enable_tooltip",
+    }
 
 
 @pytest.mark.parametrize(

@@ -228,3 +228,51 @@ def check_invariants(main: MainWindow) -> list[str]:
                     f"expected {expected_region!r}"
                 )
     return problems
+
+
+def snapshot(main: MainWindow) -> dict[str, object]:
+    """Everything about ``main`` that a user can see or that gets saved."""
+    return {
+        "state": main.state,
+        "origin": main.origin,
+        "centers": {
+            point: (center.color, center.region)
+            for point, center in main.centers.items()
+        },
+        "regions": [(region.name, list(region.points)) for region in main.regions],
+        "current_region": (
+            None if main.current_region is None else list(main.current_region.points)
+        ),
+        "colors": dict(main.colors),
+        "show_centers": list(main.show_centers),
+        "center_colors": main.center_colors,
+        "enable_tooltip": main.enable_tooltip,
+        "has_img": main.has_img,
+        "filename": main.filename,
+        "title": main.windowTitle(),
+        "buttons": {name: button.text() for name, button in main.button_states.items()},
+        "color_checkboxes": [box.isChecked() for box in main.mouse_colors],
+        "channel_checkboxes": [
+            (box.isChecked(), box.isEnabled()) for box in main.show_channels
+        ],
+        "show_center_checkboxes": [
+            box.isChecked() for box in main.show_center_checkboxes
+        ],
+        "brightness": list(main.channels.brightness),
+        "brightness_enabled": [slider.isEnabled() for slider in main.brightness],
+        "zoom": main.zoom.value(),
+        "center_size": main.center_size_slider.value(),
+    }
+
+
+def changed(before: dict[str, object], after: dict[str, object]) -> set[str]:
+    """The keys of two snapshots whose values differ."""
+    return {key for key in before if before[key] != after[key]}
+
+
+def region_pixels(
+    main: MainWindow, points: list[tuple[int, int]]
+) -> list[tuple[int, int]]:
+    """The pixels of a finished region drawn by clicking ``points``."""
+    pixels = [pixel_at(main, point) for point in points]
+    return [*pixels, pixels[0]]

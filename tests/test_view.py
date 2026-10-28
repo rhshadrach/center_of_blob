@@ -51,16 +51,20 @@ def test_zoom_before_loading_image(
     qtbot: pytestqt.qtbot.QtBot, error_messages: list[str]
 ) -> None:
     main = actions.setup_test(qtbot)
+    before = actions.snapshot(main)
     main.zoom.setValue(200)
     assert error_messages == ["Must load image first."]
+    assert actions.changed(before, actions.snapshot(main)) == {"zoom"}
 
 
 def test_center_size_before_loading_image(
     qtbot: pytestqt.qtbot.QtBot, error_messages: list[str]
 ) -> None:
     main = actions.setup_test(qtbot)
+    before = actions.snapshot(main)
     main.center_size_slider.setValue(8)
     assert error_messages == ["Must load image first."]
+    assert actions.changed(before, actions.snapshot(main)) == {"center_size"}
 
 
 @pytest.mark.parametrize("button", ["centers_path_button", "write_csv_button"])
@@ -68,8 +72,10 @@ def test_file_buttons_before_loading_image(
     qtbot: pytestqt.qtbot.QtBot, error_messages: list[str], button: str
 ) -> None:
     main = actions.setup_test(qtbot)
+    before = actions.snapshot(main)
     qtbot.mouseClick(getattr(main, button), Qt.LeftButton)
     assert error_messages == ["Must load image first."]
+    assert actions.snapshot(main) == before
 
 
 @pytest.mark.parametrize("mode", ["set_origin", "modify_centers", "draw_region"])
@@ -77,9 +83,10 @@ def test_mode_buttons_before_loading_image(
     qtbot: pytestqt.qtbot.QtBot, error_messages: list[str], mode: str
 ) -> None:
     main = actions.setup_test(qtbot)
+    before = actions.snapshot(main)
     getattr(actions, f"click_{mode}")(qtbot, main)
     assert error_messages == ["Must load image first."]
-    assert main.state == "none"
+    assert actions.snapshot(main) == before
 
 
 @pytest.mark.parametrize("channel", [0, 1, 2, 3])
@@ -100,9 +107,12 @@ def test_brightness_boxes_update_channel(
 ) -> None:
     main = actions.setup_test(qtbot)
     actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
+    before = actions.snapshot(main)
     main.brightness[1].box_low.setValue(40)
     main.brightness[1].box_high.setValue(200)
-    assert main.channels.brightness[1] == (40, 200)
+    after = actions.snapshot(main)
+    assert actions.changed(before, after) == {"brightness"}
+    assert after["brightness"] == [(0, 255), (40, 200), (0, 255), (0, 255)]
 
 
 @pytest.mark.xfail(

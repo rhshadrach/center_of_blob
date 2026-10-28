@@ -23,6 +23,7 @@ def test_click_maps_x_to_column(
     actions.click_modify_centers(qtbot, main)
     actions.click_color_channel(qtbot, main, channel=1)
     actions.click_main_image(qtbot, main, [(300, 20)])
+    assert list(main.centers) == [actions.pixel_at(main, (300, 20))]
     ((row, column),) = main.centers
     # Pixels are (row, column): clicking far right and near the top gives a
     # small row and a large column.
@@ -53,8 +54,9 @@ def test_click_without_color_adds_nothing(
     main = actions.setup_test(qtbot)
     actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
     actions.click_modify_centers(qtbot, main)
+    before = actions.snapshot(main)
     actions.click_main_image(qtbot, main, [(100, 100)])
-    assert len(main.centers) == 0
+    assert actions.snapshot(main) == before
 
 
 def test_click_outside_mode_adds_nothing(
@@ -63,9 +65,9 @@ def test_click_outside_mode_adds_nothing(
     main = actions.setup_test(qtbot)
     actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
     actions.click_color_channel(qtbot, main, channel=1)
+    before = actions.snapshot(main)
     actions.click_main_image(qtbot, main, [(100, 100)])
-    assert len(main.centers) == 0
-    assert main.origin is None
+    assert actions.snapshot(main) == before
 
 
 def test_right_click_removes_nearest_center(
@@ -88,8 +90,9 @@ def test_right_click_far_from_centers_removes_nothing(
     actions.click_modify_centers(qtbot, main)
     actions.click_color_channel(qtbot, main, channel=1)
     actions.click_main_image(qtbot, main, [(100, 100)])
+    before = actions.snapshot(main)
     actions.right_click_main_image(qtbot, main, [(300, 300)])
-    assert len(main.centers) == 1
+    assert actions.snapshot(main) == before
 
 
 def test_set_origin_twice_moves_it(
@@ -188,9 +191,11 @@ def test_non_tiff_image_is_refused(
     Image.fromarray(np.zeros((40, 50), dtype="uint8")).save(path)
     main = actions.setup_test(qtbot)
     actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
+    before = actions.snapshot(main)
     actions.load_image(monkeypatch, qtbot, main, path)
     assert len(error_messages) == 1
-    assert main.filename == actions.data.resolve_path("data/sample.tif")
+    assert error_messages[0].startswith("Failed to load file")
+    assert actions.snapshot(main) == before
 
 
 @pytest.mark.xfail(
@@ -204,6 +209,8 @@ def test_cancel_image_dialog(
     error_messages: list[str],
 ) -> None:
     main = actions.setup_test(qtbot)
+    before = actions.snapshot(main)
     monkeypatch.setattr(actions.popups, "get_image_filename", lambda *a, **k: "")
     qtbot.mouseClick(main.img_path_button, actions.QtCore.Qt.LeftButton)
     assert error_messages == []
+    assert actions.snapshot(main) == before

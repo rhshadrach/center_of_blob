@@ -47,12 +47,17 @@ def test_full_session(
     actions.click_modify_centers(qtbot, main)
     assert_consistent(main)
 
-    regions = {
-        actions.pixel_at(main, pos): center.region
-        for pos, center in zip([(100, 100), (200, 200)], main.centers.values())
+    after = actions.snapshot(main)
+    assert after["state"] == "none"
+    assert after["origin"] == actions.pixel_at(main, (50, 50))
+    assert after["regions"] == [
+        ("inner", actions.region_pixels(main, SQUARE)),
+        ("outer", actions.region_pixels(main, SQUARE_2)),
+    ]
+    assert after["centers"] == {
+        actions.pixel_at(main, (100, 100)): ((255, 0, 0), "inner"),
+        actions.pixel_at(main, (200, 200)): ((255, 0, 0), "outer"),
     }
-    assert sorted(regions.values()) == ["inner", "outer"]
-    assert len(main.centers) == 2
     assert error_messages == []
 
 
@@ -80,11 +85,11 @@ def test_order_of_actions_does_not_matter(
             actions.click_modify_centers(qtbot, main)
         assert_consistent(main)
 
-    assert main.origin == actions.pixel_at(main, (50, 50))
-    assert [region.name for region in main.regions] == ["inner"]
-    assert {
-        point: (center.color, center.region) for point, center in main.centers.items()
-    } == {
+    after = actions.snapshot(main)
+    assert after["state"] == "none"
+    assert after["origin"] == actions.pixel_at(main, (50, 50))
+    assert after["regions"] == [("inner", actions.region_pixels(main, SQUARE))]
+    assert after["centers"] == {
         actions.pixel_at(main, (100, 100)): ((0, 255, 0), "inner"),
         actions.pixel_at(main, (300, 300)): ((0, 255, 0), ""),
     }
@@ -110,6 +115,7 @@ def test_switching_modes(
     }
     main = actions.setup_test(qtbot)
     actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
+    before = actions.snapshot(main)
     buttons[start](qtbot, main)
     assert main.state == states[start]
     assert_consistent(main)
@@ -117,6 +123,12 @@ def test_switching_modes(
     buttons[then](qtbot, main)
     assert main.state == ("none" if start == then else states[then])
     assert_consistent(main)
+    # Without clicking the image, switching modes changes nothing else.
+    assert actions.changed(before, actions.snapshot(main)) <= {
+        "state",
+        "buttons",
+        "current_region",
+    }
 
 
 def test_switching_mode_finishes_region(
@@ -132,7 +144,9 @@ def test_switching_mode_finishes_region(
     actions.click_modify_centers(qtbot, main)
 
     assert main.state == "modifying_centers"
-    assert [region.name for region in main.regions] == ["switched"]
+    assert actions.snapshot(main)["regions"] == [
+        ("switched", actions.region_pixels(main, SQUARE))
+    ]
     assert_consistent(main)
 
 
@@ -147,11 +161,14 @@ def test_remove_region_reclassifies_centers(
     actions.click_main_image(qtbot, main, [(100, 100)])
     actions.click_modify_centers(qtbot, main)
     assert [center.region for center in main.centers.values()] == ["inner"]
+    before = actions.snapshot(main)
 
     # Right-clicking near a region's corner outside any mode removes it.
     actions.right_click_main_image(qtbot, main, [(91, 91)])
-    assert main.regions == []
-    assert [center.region for center in main.centers.values()] == [""]
+    after = actions.snapshot(main)
+    assert actions.changed(before, after) == {"regions", "centers"}
+    assert after["regions"] == []
+    assert after["centers"] == {actions.pixel_at(main, (100, 100)): ((255, 0, 0), "")}
     assert_consistent(main)
 
 
@@ -161,8 +178,9 @@ def test_right_click_away_from_region_keeps_it(
     main = actions.setup_test(qtbot)
     actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
     actions.draw_region(monkeypatch, qtbot, main, SQUARE, "inner")
+    before = actions.snapshot(main)
     actions.right_click_main_image(qtbot, main, [(400, 400)])
-    assert [region.name for region in main.regions] == ["inner"]
+    assert actions.snapshot(main) == before
 
 
 def test_right_click_in_modify_mode_removes_center_not_region(
@@ -173,10 +191,10 @@ def test_right_click_in_modify_mode_removes_center_not_region(
     actions.draw_region(monkeypatch, qtbot, main, SQUARE, "inner")
     actions.click_modify_centers(qtbot, main)
     actions.click_color_channel(qtbot, main, channel=1)
+    before = actions.snapshot(main)
     actions.click_main_image(qtbot, main, [(91, 91)])
     actions.right_click_main_image(qtbot, main, [(91, 91)])
-    assert len(main.centers) == 0
-    assert [region.name for region in main.regions] == ["inner"]
+    assert actions.snapshot(main) == before
 
 
 def test_loading_new_image_resets_work(
@@ -190,12 +208,15 @@ def test_loading_new_image_resets_work(
     actions.click_modify_centers(qtbot, main)
     actions.click_color_channel(qtbot, main, channel=1)
     actions.click_main_image(qtbot, main, [(100, 100)])
+    # Untick the color first; reloading doesn't clear the checkboxes, which
+    # test_loading_image_keeps_color_checkboxes_in_sync covers.
+    actions.click_color_channel(qtbot, main, channel=1)
     actions.click_modify_centers(qtbot, main)
 
     actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
-    assert main.origin is None
-    assert main.regions == []
-    assert len(main.centers) == 0
+    fresh = actions.setup_test(qtbot)
+    actions.load_image(monkeypatch, qtbot, fresh, "data/sample.tif")
+    assert actions.snapshot(main) == actions.snapshot(fresh)
 
 
 @pytest.mark.parametrize("mode", ["set_origin", "modify_centers", "draw_region"])

@@ -13,7 +13,12 @@ def test_load_csv(monkeypatch: pytest.MonkeyPatch, qtbot: pytestqt.qtbot.QtBot) 
     main = actions.setup_test(qtbot)
     actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
     actions.load_csv(monkeypatch, qtbot, main, "data/sample.csv")
-    assert len(main.centers) == 2
+    assert main.origin == (246, 500)
+    assert {point: center.color for point, center in main.centers.items()} == {
+        (96, 316): (255, 0, 0),
+        (201, 860): (255, 0, 0),
+    }
+    assert main.regions == []
 
 
 def test_write_csv(
