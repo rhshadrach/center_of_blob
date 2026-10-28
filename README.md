@@ -11,7 +11,7 @@ file that can be loaded again later to continue or check the work.
 CellCensus needs Python 3.10 or newer. Install it from GitHub:
 
 ```bash
-pip install git+https://github.com/rhshadrach/cellcensus.git
+pip install git+https://github.com/rhshadrach/CellCensus.git
 ```
 
 Then start the app with:
@@ -121,8 +121,8 @@ CSV with **Select Centers File**.
 ## Development
 
 ```bash
-git clone https://github.com/rhshadrach/cellcensus.git
-cd cellcensus
+git clone https://github.com/rhshadrach/CellCensus.git
+cd CellCensus
 uv sync
 uv run prek install
 uv run pytest tests
