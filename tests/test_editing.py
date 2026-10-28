@@ -198,11 +198,6 @@ def test_non_tiff_image_is_refused(
     assert actions.snapshot(main) == before
 
 
-@pytest.mark.xfail(
-    reason="Cancelling the image dialog tries to open the current directory and "
-    "shows an error",
-    strict=True,
-)
 def test_cancel_image_dialog(
     monkeypatch: pytest.MonkeyPatch,
     qtbot: pytestqt.qtbot.QtBot,
