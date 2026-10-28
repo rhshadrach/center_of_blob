@@ -184,11 +184,6 @@ def test_shortcuts_before_loading_image(
 @pytest.mark.parametrize(
     "key", [Qt.Key_A, Qt.Key_S, Qt.Key_D, Qt.Key_F, Qt.Key_Return], ids=key_id
 )
-@pytest.mark.xfail(
-    reason="These shortcuts redraw the image without checking one is loaded, "
-    "raising IndexError",
-    strict=True,
-)
 def test_view_shortcuts_before_loading_image(
     monkeypatch: pytest.MonkeyPatch, qtbot: pytestqt.qtbot.QtBot, key: Qt.Key
 ) -> None:

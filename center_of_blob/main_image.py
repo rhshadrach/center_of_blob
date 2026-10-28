@@ -83,6 +83,8 @@ class ScrollLabel(QScrollArea):
 
     def update_image(self) -> None:
         main_window = self._main_window
+        if not main_window.has_img:
+            return
         self._maybe_init_height()
 
         if self._cache is None:

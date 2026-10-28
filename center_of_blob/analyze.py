@@ -88,28 +88,20 @@ def highlight_point(
     center_size: int = 5,
     border_color: tuple[int, int, int] = (255, 255, 255),
 ) -> None:
-    xx, yy = point
-    for k in range(center_size):
-        for k2 in range(center_size):
-            data[xx + k, yy + k2] = color
-            data[xx + k, yy - k2] = color
-            data[xx - k, yy + k2] = color
-            data[xx - k, yy - k2] = color
-            data[xx + k2, yy + k] = color
-            data[xx - k2, yy + k] = color
-            data[xx + k2, yy - k] = color
-            data[xx - k2, yy - k] = color
-
     border_size = 2 if center_size > 4 else 1
-    for k in range(center_size + border_size):
-        for k2 in range(center_size + border_size):
-            if k < center_size and k2 < center_size:
-                continue
-            data[xx + k, yy + k2] = border_color
-            data[xx + k, yy - k2] = border_color
-            data[xx - k, yy + k2] = border_color
-            data[xx - k, yy - k2] = border_color
-            data[xx + k2, yy + k] = border_color
-            data[xx - k2, yy + k] = border_color
-            data[xx + k2, yy - k] = border_color
-            data[xx - k2, yy - k] = border_color
+    fill_square(data, point, center_size + border_size - 1, border_color)
+    fill_square(data, point, center_size - 1, color)
+
+
+def fill_square(
+    data: np.ndarray,
+    point: tuple[int, int],
+    radius: int,
+    color: tuple[int, int, int],
+) -> None:
+    """Fill the pixels within ``radius`` of ``point``, clipped to ``data``."""
+    xx, yy = point
+    # Clip at 0 so negative indices don't wrap around to the opposite edge.
+    data[
+        max(xx - radius, 0) : xx + radius + 1, max(yy - radius, 0) : yy + radius + 1
+    ] = color

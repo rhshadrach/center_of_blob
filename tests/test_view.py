@@ -90,11 +90,6 @@ def test_mode_buttons_before_loading_image(
 
 
 @pytest.mark.parametrize("channel", [0, 1, 2, 3])
-@pytest.mark.xfail(
-    reason="Toggling a channel redraws the image without checking one is loaded, "
-    "raising IndexError",
-    strict=True,
-)
 def test_toggle_channel_before_loading_image(
     qtbot: pytestqt.qtbot.QtBot, channel: int
 ) -> None:
@@ -115,10 +110,6 @@ def test_brightness_boxes_update_channel(
     assert after["brightness"] == [(0, 255), (40, 200), (0, 255), (0, 255)]
 
 
-@pytest.mark.xfail(
-    reason="Equal low and high brightness divides by zero in Channels.clip_data",
-    strict=True,
-)
 def test_brightness_low_equal_to_high(
     monkeypatch: pytest.MonkeyPatch, qtbot: pytestqt.qtbot.QtBot
 ) -> None:
