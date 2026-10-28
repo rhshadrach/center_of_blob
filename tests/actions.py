@@ -99,19 +99,38 @@ def pixel_at(main: MainWindow, pos: tuple[int, int]) -> tuple[int, int]:
     return tm.pos_to_pixel((pos[1], pos[0]), main)
 
 
+def answer_region_names(
+    monkeypatch: pytest.MonkeyPatch, answers: list[tuple[str, bool]]
+) -> list[tuple[str, bool]]:
+    """Answer the region name dialog with each (text, accepted) in turn.
+
+    Returns the list of answers still unused, so tests can check the dialog was
+    asked exactly as often as expected.
+    """
+    remaining = list(answers)
+
+    def get_text(*args: object) -> tuple[str, bool]:
+        if not remaining:
+            raise AssertionError("the region name dialog was asked too often")
+        return remaining.pop(0)
+
+    monkeypatch.setattr(QInputDialog, "getText", get_text)
+    return remaining
+
+
 def draw_region(
     monkeypatch: pytest.MonkeyPatch,
     qtbot: pytestqt.qtbot.QtBot,
     main: MainWindow,
     points: list[tuple[int, int]],
     name: str,
-    accepted: bool = True,
 ) -> None:
     """Draw a region and answer the region name dialog with ``name``."""
-    monkeypatch.setattr(QInputDialog, "getText", lambda *args: (name, accepted))
+    remaining = answer_region_names(monkeypatch, [(name, True)])
     click_draw_region(qtbot, main)
     click_main_image(qtbot, main, points)
     click_draw_region(qtbot, main)
+    assert remaining == []
 
 
 def press_key(

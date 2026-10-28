@@ -16,5 +16,9 @@ def error_messages(monkeypatch: pytest.MonkeyPatch) -> list[str]:
 def message_boxes(monkeypatch: pytest.MonkeyPatch) -> list[QMessageBox]:
     """Record message boxes instead of showing them."""
     boxes: list[QMessageBox] = []
-    monkeypatch.setattr(QMessageBox, "exec", boxes.append)
+
+    def exec_(box: QMessageBox) -> None:
+        boxes.append(box)
+
+    monkeypatch.setattr(QMessageBox, "exec", exec_)
     return boxes

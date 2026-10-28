@@ -180,8 +180,20 @@ def test_three_frame_image_disables_channel_0(
     assert not main.brightness[0].isEnabled()
 
     actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
-    assert main.show_channels[0].isEnabled()
-    assert main.brightness[0].isEnabled()
+    # The same as opening the 4-frame image at startup.
+    fresh = actions.setup_test(qtbot)
+    actions.load_image(monkeypatch, qtbot, fresh, "data/sample.tif")
+    assert actions.snapshot(main) == actions.snapshot(fresh)
+
+
+def test_reloading_keeps_unticked_channel_0(
+    monkeypatch: pytest.MonkeyPatch, qtbot: pytestqt.qtbot.QtBot
+) -> None:
+    main = actions.setup_test(qtbot)
+    actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
+    main.show_channels[0].setChecked(False)
+    actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
+    assert not main.show_channels[0].isChecked()
 
 
 def test_non_tiff_image_is_refused(
