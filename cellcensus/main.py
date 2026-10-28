@@ -624,7 +624,8 @@ class MainWindow(QMainWindow):
 def except_hook(
     cls: type[BaseException], exception: BaseException, tb: TracebackType | None
 ) -> None:
-    timestamp = datetime.datetime.now()
+    # No colons: Windows doesn't allow them in filenames.
+    timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     stacktrace = traceback.format_tb(tb)
     msg = f"Error: {cls} -- {exception}\nStacktrace\n"
     for line in stacktrace:
@@ -639,6 +640,15 @@ def except_hook(
 
 
 def run() -> None:
+    if sys.argv[1:2] == ["--smoke-test"]:
+        # Imported here: cellcensus.smoke_test imports this module.
+        from cellcensus.smoke_test import smoke_test
+
+        if len(sys.argv) != 4:
+            print("Usage: cellcensus --smoke-test IMAGE CENTERS_CSV", file=sys.stderr)
+            sys.exit(2)
+        sys.exit(smoke_test(sys.argv[2], sys.argv[3]))
+
     sys.excepthook = except_hook
     app = QApplication(sys.argv)
     main = MainWindow()

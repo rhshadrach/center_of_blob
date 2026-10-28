@@ -4,17 +4,19 @@ from PyQt5.QtWidgets import QAction, QMessageBox
 
 from tests import actions
 
-# TODO: Test the output is correct?
 
-
-def test_info_opens(
-    monkeypatch: pytest.MonkeyPatch, qtbot: pytestqt.qtbot.QtBot
+def test_info_shows_filename(
+    monkeypatch: pytest.MonkeyPatch,
+    qtbot: pytestqt.qtbot.QtBot,
+    message_boxes: list[QMessageBox],
 ) -> None:
     main = actions.setup_test(qtbot)
-    with actions.setup_close_message_box(qtbot):
-        child = main.findChild(QAction, "action_show_info")
-        assert child is not None
-        child.trigger()
+    actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
+    child = main.findChild(QAction, "action_show_info")
+    assert child is not None
+    child.trigger()
+    (box,) = message_boxes
+    assert box.text() == f"Filename: {main.filename}"
 
 
 def test_shortcuts_lists_ctrl_shortcuts(

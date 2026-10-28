@@ -1,6 +1,5 @@
 import pytest
 import pytestqt.qtbot
-from PyQt5 import QtCore
 
 import cellcensus.testing as tm
 from cellcensus.centers import Center
@@ -18,8 +17,8 @@ def test_make_region_first(
     actions.click_main_image(qtbot, main, [(110, 90)])
     actions.click_main_image(qtbot, main, [(110, 110)])
     actions.click_main_image(qtbot, main, [(90, 110)])
-    with actions.setup_close_region_name_box(qtbot, "test_name"):
-        actions.click_draw_region(qtbot, main)
+    actions.answer_region_names(monkeypatch, [("test_name", True)])
+    actions.click_draw_region(qtbot, main)
 
     actions.click_modify_centers(qtbot, main)
     actions.click_color_channel(qtbot, main, channel=1)
@@ -51,8 +50,8 @@ def test_make_region_after(
     actions.click_main_image(qtbot, main, [(110, 90)])
     actions.click_main_image(qtbot, main, [(110, 110)])
     actions.click_main_image(qtbot, main, [(90, 110)])
-    with actions.setup_close_region_name_box(qtbot, "test_name"):
-        actions.click_draw_region(qtbot, main)
+    actions.answer_region_names(monkeypatch, [("test_name", True)])
+    actions.click_draw_region(qtbot, main)
 
     pixel0 = tm.pos_to_pixel((100, 100), main)
     pixel1 = tm.pos_to_pixel((200, 200), main)
@@ -64,7 +63,9 @@ def test_make_region_after(
 
 
 def test_make_region_overlap_first(
-    monkeypatch: pytest.MonkeyPatch, qtbot: pytestqt.qtbot.QtBot
+    monkeypatch: pytest.MonkeyPatch,
+    qtbot: pytestqt.qtbot.QtBot,
+    error_messages: list[str],
 ) -> None:
     main = actions.setup_test(qtbot)
     actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
@@ -74,8 +75,8 @@ def test_make_region_overlap_first(
     actions.click_main_image(qtbot, main, [(110, 90)])
     actions.click_main_image(qtbot, main, [(110, 110)])
     actions.click_main_image(qtbot, main, [(90, 110)])
-    with actions.setup_close_region_name_box(qtbot, "test_name"):
-        actions.click_draw_region(qtbot, main)
+    actions.answer_region_names(monkeypatch, [("test_name", True)])
+    actions.click_draw_region(qtbot, main)
 
     actions.click_draw_region(qtbot, main)
     actions.click_main_image(qtbot, main, [(100, 100)])
@@ -83,13 +84,20 @@ def test_make_region_overlap_first(
     actions.click_main_image(qtbot, main, [(120, 120)])
     actions.click_main_image(qtbot, main, [(100, 120)])
 
-    QtCore.QTimer.singleShot(1000, actions.window_accept)
-    with actions.setup_close_region_name_box(qtbot, "test_name_2"):
-        actions.click_draw_region(qtbot, main)
+    actions.answer_region_names(monkeypatch, [("test_name_2", True)])
+    actions.click_draw_region(qtbot, main)
 
     actions.click_modify_centers(qtbot, main)
     actions.click_color_channel(qtbot, main, channel=1)
     actions.click_main_image(qtbot, main, [(105, 105)])
+    assert error_messages == [
+        (
+            "Center belongs to multiple regions with different names:\n"
+            "  test_name\n"
+            "  test_name_2\n"
+            "Classifying as test_name"
+        )
+    ]
 
     pixel = tm.pos_to_pixel((105, 105), main)
     expected = {

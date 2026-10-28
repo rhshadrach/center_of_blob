@@ -1,11 +1,7 @@
-import contextlib
-import functools as ft
-from collections.abc import Generator
-
 import pytest
 import pytestqt.qtbot
 from PyQt5 import QtCore, QtGui
-from PyQt5.QtWidgets import QApplication, QInputDialog, QMessageBox
+from PyQt5.QtWidgets import QApplication, QInputDialog
 
 import cellcensus.testing as tm
 from cellcensus import popups
@@ -172,46 +168,6 @@ def ctrl_scroll(monkeypatch: pytest.MonkeyPatch, main: MainWindow, delta: int) -
         False,
     )
     QApplication.sendEvent(main.label.label, event)
-
-
-@contextlib.contextmanager
-def setup_close_message_box(qtbot: pytestqt.qtbot.QtBot) -> Generator[None, None, None]:
-    QtCore.QTimer.singleShot(500, ft.partial(close_message_box, qtbot))
-    try:
-        yield
-    finally:
-        pass
-
-
-@contextlib.contextmanager
-def setup_close_region_name_box(
-    qtbot: pytestqt.qtbot.QtBot, text_value: str
-) -> Generator[None, None, None]:
-    QtCore.QTimer.singleShot(500, ft.partial(write_region_name, qtbot, text_value))
-    try:
-        yield
-    finally:
-        pass
-
-
-def write_region_name(qtbot: pytestqt.qtbot.QtBot, text_value: str) -> None:
-    window = QApplication.activeWindow()
-    if isinstance(window, QInputDialog):
-        window.setTextValue(text_value)
-        window.accept()
-
-
-def close_message_box(qtbot: pytestqt.qtbot.QtBot) -> None:
-    window = QApplication.activeWindow()
-    if isinstance(window, QMessageBox):
-        close_button = window.button(QMessageBox.Ok)
-        qtbot.mouseClick(close_button, QtCore.Qt.LeftButton)
-
-
-def window_accept() -> None:
-    window = QApplication.activeWindow()
-    if isinstance(window, QMessageBox):
-        window.accept()
 
 
 def check_invariants(main: MainWindow) -> list[str]:

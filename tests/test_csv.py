@@ -1,4 +1,4 @@
-import tempfile
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -22,15 +22,15 @@ def test_load_csv(monkeypatch: pytest.MonkeyPatch, qtbot: pytestqt.qtbot.QtBot) 
 
 
 def test_write_csv(
-    monkeypatch: pytest.MonkeyPatch, qtbot: pytestqt.qtbot.QtBot
+    monkeypatch: pytest.MonkeyPatch, qtbot: pytestqt.qtbot.QtBot, tmp_path: Path
 ) -> None:
     main = actions.setup_test(qtbot)
     actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
     main.origin = (50, 50)
     main.centers = cc.Centers({(20, 30): cc.Center(20, 30, (255, 0, 0), "")})
-    with tempfile.NamedTemporaryFile() as file:
-        actions.save_csv(monkeypatch, qtbot, main, file.name)
-        result = pd.read_csv(file.name)
+    path = tmp_path / "out.csv"
+    actions.save_csv(monkeypatch, qtbot, main, str(path))
+    result = pd.read_csv(path)
     expected = pd.DataFrame(
         {
             "kind": ["origin", "center"],
@@ -47,16 +47,16 @@ def test_write_csv(
 
 
 def test_write_csv_regions(
-    monkeypatch: pytest.MonkeyPatch, qtbot: pytestqt.qtbot.QtBot
+    monkeypatch: pytest.MonkeyPatch, qtbot: pytestqt.qtbot.QtBot, tmp_path: Path
 ) -> None:
     main = actions.setup_test(qtbot)
     actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
     main.origin = (50, 50)
     main.centers = cc.Centers({(20, 30): cc.Center(20, 30, (255, 0, 0), "")})
     main.regions = [cc.Region([(10, 10), (10, 40), (40, 40), (40, 10)], "test_name")]
-    with tempfile.NamedTemporaryFile() as file:
-        actions.save_csv(monkeypatch, qtbot, main, file.name)
-        result = pd.read_csv(file.name)
+    path = tmp_path / "out.csv"
+    actions.save_csv(monkeypatch, qtbot, main, str(path))
+    result = pd.read_csv(path)
     expected = pd.DataFrame(
         {
             "kind": ["origin", "center"] + 4 * ["region"],
