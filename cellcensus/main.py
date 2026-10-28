@@ -8,7 +8,7 @@ import traceback
 from collections.abc import Callable
 from pathlib import Path
 from types import TracebackType
-from typing import Concatenate, ParamSpec, TypeVar
+from typing import Concatenate
 
 import numpy as np
 import pandas as pd
@@ -28,13 +28,9 @@ from cellcensus.centers import Center, Centers
 from cellcensus.channels import N_CHANNELS, Channels
 from cellcensus.region import Region
 
-C = TypeVar("C", bound="MainWindow")
-P = ParamSpec("P")
-R = TypeVar("R")
-
 
 # TODO: Why do we have to use lambda with the .connect calls below when using this?
-def require_image(
+def require_image[C: MainWindow, **P, R](
     func: Callable[Concatenate[C, P], R],
 ) -> Callable[Concatenate[C, P], R | None]:
     def wrapper(self: C, *args: P.args, **kwargs: P.kwargs) -> R | None:

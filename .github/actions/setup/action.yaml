@@ -9,7 +9,7 @@ inputs:
   python-version:
     description: Python version to install.
     required: false
-    default: "3.10"
+    default: "3.12"
   system-dependencies:
     description: Install the Qt system packages needed to run the GUI (Linux only).
     required: false
