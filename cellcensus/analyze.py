@@ -5,7 +5,7 @@ from collections.abc import Iterable
 
 import numpy as np
 
-from center_of_blob.centers import Centers
+from cellcensus.centers import Centers
 
 
 def highlight_points(

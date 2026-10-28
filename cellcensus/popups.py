@@ -5,10 +5,10 @@ from typing import TYPE_CHECKING
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QMainWindow, QMessageBox
 
-from center_of_blob import __version__
+from cellcensus import __version__
 
 if TYPE_CHECKING:
-    from center_of_blob.main import MainWindow
+    from cellcensus.main import MainWindow
 
 
 def error_msg(msg: str) -> None:
@@ -56,7 +56,7 @@ def shortcuts_dialog(main_window: MainWindow) -> None:
 def about_dialog() -> None:
     msgBox = QMessageBox()
     msgBox.setIcon(QMessageBox.Information)
-    msgBox.setText(f"Center Of Blob version {__version__}\nBy Richard Shadrach")
+    msgBox.setText(f"CellCensus version {__version__}\nBy Richard Shadrach")
     msgBox.setWindowTitle("About")
     msgBox.setStandardButtons(QMessageBox.Ok)
     msgBox.exec()

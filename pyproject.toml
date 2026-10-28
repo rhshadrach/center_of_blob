@@ -3,11 +3,11 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "center_of_blob"
+name = "cellcensus"
 authors = [
     {name = "Richard Shadrach", email = "rhshadrach@gmail.com"},
 ]
-description = "Center of Blob"
+description = "Mark and count blob centers, such as cells, in multichannel microscopy images"
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "BSD-3-Clause"}
@@ -28,8 +28,11 @@ dependencies = [
 ]
 dynamic = ["version"]
 
+[project.scripts]
+cellcensus = "cellcensus.main:run"
+
 [tool.setuptools.dynamic]
-version = {file = "center_of_blob/VERSION"}
+version = {file = "cellcensus/VERSION"}
 
 [dependency-groups]
 lint = [

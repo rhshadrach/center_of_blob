@@ -1,6 +1,6 @@
 import pytest
 
-from center_of_blob.region import Region
+from cellcensus.region import Region
 
 
 def test_contains_point_without_points() -> None:

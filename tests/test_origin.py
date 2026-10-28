@@ -1,7 +1,7 @@
 import pytest
 import pytestqt.qtbot
 
-import center_of_blob.testing as tm
+import cellcensus.testing as tm
 from tests import actions
 
 

@@ -5,8 +5,8 @@ import pandas as pd
 import pytest
 import pytestqt.qtbot
 
-import center_of_blob as cob
-from center_of_blob.main import MainWindow
+import cellcensus as cc
+from cellcensus.main import MainWindow
 from tests import actions
 
 SQUARE = [(90, 90), (110, 90), (110, 110), (90, 110)]
@@ -62,8 +62,8 @@ def test_write_then_rewrite_is_identical(
     main = actions.setup_test(qtbot)
     actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
     main.origin = (50, 50)
-    main.centers = cob.Centers({(20, 30): cob.Center(20, 30, (255, 0, 0), "")})
-    main.regions = [cob.Region([(10, 10), (10, 40), (40, 40), (40, 10)], "a")]
+    main.centers = cc.Centers({(20, 30): cc.Center(20, 30, (255, 0, 0), "")})
+    main.regions = [cc.Region([(10, 10), (10, 40), (40, 40), (40, 10)], "a")]
     reloaded = write_and_reload(monkeypatch, qtbot, main, tmp_path / "first.csv")
     actions.save_csv(monkeypatch, qtbot, reloaded, str(tmp_path / "second.csv"))
     pd.testing.assert_frame_equal(
@@ -77,7 +77,7 @@ def test_round_trip_center_at_origin(
     main = actions.setup_test(qtbot)
     actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
     main.origin = (50, 50)
-    main.centers = cob.Centers({(50, 50): cob.Center(50, 50, (255, 0, 0), "")})
+    main.centers = cc.Centers({(50, 50): cc.Center(50, 50, (255, 0, 0), "")})
     reloaded = write_and_reload(monkeypatch, qtbot, main, tmp_path / "out.csv")
     assert reloaded.centers.keys() == {(50, 50)}
 
@@ -101,8 +101,8 @@ def test_round_trip_region_name_kept_as_written(
     main = actions.setup_test(qtbot)
     actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
     main.origin = (50, 50)
-    main.centers = cob.Centers({(20, 20): cob.Center(20, 20, (255, 0, 0), name)})
-    main.regions = [cob.Region([(10, 10), (10, 40), (40, 40), (10, 10)], name)]
+    main.centers = cc.Centers({(20, 20): cc.Center(20, 20, (255, 0, 0), name)})
+    main.regions = [cc.Region([(10, 10), (10, 40), (40, 40), (10, 10)], name)]
     reloaded = write_and_reload(monkeypatch, qtbot, main, tmp_path / "out.csv")
     assert [region.name for region in reloaded.regions] == [name]
     assert reloaded.centers[20, 20].region == name
@@ -116,10 +116,10 @@ def test_round_trip_keeps_region_order(
     main = actions.setup_test(qtbot)
     actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
     main.origin = (50, 50)
-    main.centers = cob.Centers({(20, 30): cob.Center(20, 30, (255, 0, 0), "")})
+    main.centers = cc.Centers({(20, 30): cc.Center(20, 30, (255, 0, 0), "")})
     main.regions = [
-        cob.Region([(10, 10), (10, 40), (40, 40), (10, 10)], "b"),
-        cob.Region([(100, 100), (100, 140), (140, 140), (100, 100)], "a"),
+        cc.Region([(10, 10), (10, 40), (40, 40), (10, 10)], "b"),
+        cc.Region([(100, 100), (100, 140), (140, 140), (100, 100)], "a"),
     ]
     reloaded = write_and_reload(monkeypatch, qtbot, main, tmp_path / "out.csv")
     assert [(r.name, r.points) for r in reloaded.regions] == [
@@ -190,7 +190,7 @@ def test_write_csv_has_no_warnings(
     main = actions.setup_test(qtbot)
     actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
     main.origin = (50, 50)
-    main.centers = cob.Centers({(20, 30): cob.Center(20, 30, (255, 0, 0), "")})
+    main.centers = cc.Centers({(20, 30): cc.Center(20, 30, (255, 0, 0), "")})
     with warnings.catch_warnings():
         warnings.simplefilter("error")
         actions.save_csv(monkeypatch, qtbot, main, str(tmp_path / "out.csv"))
@@ -204,7 +204,7 @@ def test_write_csv_requires_origin(
 ) -> None:
     main = actions.setup_test(qtbot)
     actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
-    main.centers = cob.Centers({(20, 30): cob.Center(20, 30, (255, 0, 0), "")})
+    main.centers = cc.Centers({(20, 30): cc.Center(20, 30, (255, 0, 0), "")})
     actions.save_csv(monkeypatch, qtbot, main, str(tmp_path / "out.csv"))
     assert error_messages == ["Must set origin to write CSV file."]
     assert not (tmp_path / "out.csv").exists()
@@ -232,7 +232,7 @@ def test_cancel_save_dialog(
     main = actions.setup_test(qtbot)
     actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
     main.origin = (50, 50)
-    main.centers = cob.Centers({(20, 30): cob.Center(20, 30, (255, 0, 0), "")})
+    main.centers = cc.Centers({(20, 30): cc.Center(20, 30, (255, 0, 0), "")})
     before = actions.snapshot(main)
     actions.save_csv(monkeypatch, qtbot, main, "")
     assert error_messages == []
@@ -247,7 +247,7 @@ def test_cancel_load_centers_dialog(
     main = actions.setup_test(qtbot)
     actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
     before = actions.snapshot(main)
-    monkeypatch.setattr(cob.popups, "get_centers_filename", lambda *args, **kwargs: "")
+    monkeypatch.setattr(cc.popups, "get_centers_filename", lambda *args, **kwargs: "")
     qtbot.mouseClick(main.centers_path_button, actions.QtCore.Qt.LeftButton)
     assert error_messages == []
     assert actions.snapshot(main) == before
@@ -329,8 +329,8 @@ def test_refused_centers_file_keeps_existing_work(
     main = actions.setup_test(qtbot)
     actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
     main.origin = (50, 50)
-    main.centers = cob.Centers({(20, 30): cob.Center(20, 30, (255, 0, 0), "")})
-    main.regions = [cob.Region([(10, 10), (10, 40), (40, 40), (10, 10)], "a")]
+    main.centers = cc.Centers({(20, 30): cc.Center(20, 30, (255, 0, 0), "")})
+    main.regions = [cc.Region([(10, 10), (10, 40), (40, 40), (10, 10)], "a")]
     before = actions.snapshot(main)
     actions.load_csv(monkeypatch, qtbot, main, str(path))
     assert len(error_messages) == 1
@@ -368,8 +368,8 @@ def test_load_centers_malformed(
     main = actions.setup_test(qtbot)
     actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
     main.origin = (50, 50)
-    main.centers = cob.Centers({(20, 30): cob.Center(20, 30, (255, 0, 0), "")})
-    main.regions = [cob.Region([(10, 10), (10, 40), (40, 40), (10, 10)], "a")]
+    main.centers = cc.Centers({(20, 30): cc.Center(20, 30, (255, 0, 0), "")})
+    main.regions = [cc.Region([(10, 10), (10, 40), (40, 40), (10, 10)], "a")]
     before = actions.snapshot(main)
     actions.load_csv(monkeypatch, qtbot, main, str(path))
     assert len(error_messages) == 1

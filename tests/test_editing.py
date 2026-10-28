@@ -5,8 +5,8 @@ import pytest
 import pytestqt.qtbot
 from PIL import Image
 
-from center_of_blob import analyze
-from center_of_blob.centers import Center
+from cellcensus import analyze
+from cellcensus.centers import Center
 from tests import actions
 
 

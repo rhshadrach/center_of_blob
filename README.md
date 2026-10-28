@@ -1,6 +1,6 @@
-# Center of Blob
+# CellCensus
 
-Center of Blob is a desktop app for marking the centers of blobs, such as cell
+CellCensus is a desktop app for marking the centers of blobs, such as cell
 bodies, in multichannel microscopy images. For each blob you click, it records
 which color channels the blob appears in, which user-drawn region it lies in,
 and its distance from an origin you choose. The results are saved as a CSV
@@ -8,29 +8,29 @@ file that can be loaded again later to continue or check the work.
 
 ## Installation
 
-Center of Blob needs Python 3.10 or newer. Install it from GitHub:
+CellCensus needs Python 3.10 or newer. Install it from GitHub:
 
 ```bash
-pip install git+https://github.com/rhshadrach/center_of_blob.git
+pip install git+https://github.com/rhshadrach/CellCensus.git
 ```
 
 Then start the app with:
 
 ```bash
-python -m center_of_blob.main
+cellcensus
 ```
 
-To open an image as soon as the app starts, set `COB_IMAGE_PATH`:
+To open an image as soon as the app starts, set `CELLCENSUS_IMAGE_PATH`:
 
 ```bash
-COB_IMAGE_PATH=path/to/image.tif python -m center_of_blob.main
+CELLCENSUS_IMAGE_PATH=path/to/image.tif cellcensus
 ```
 
 For real data to try the app on, see [Examples](#examples). The files are in the
 repository's `examples/` folder, which `pip install` doesn't download.
 
 A Windows executable is built by the "Build EXE" GitHub Actions workflow;
-download the `cob-exe` artifact from a run on `main`.
+download the `cellcensus-exe` artifact from a run on `main`.
 
 ## Usage
 
@@ -121,9 +121,10 @@ CSV with **Select Centers File**.
 ## Development
 
 ```bash
-git clone https://github.com/rhshadrach/center_of_blob.git
-cd center_of_blob
+git clone https://github.com/rhshadrach/CellCensus.git
+cd CellCensus
 uv sync
 uv run prek install
 uv run pytest tests
+uv run cellcensus
 ```

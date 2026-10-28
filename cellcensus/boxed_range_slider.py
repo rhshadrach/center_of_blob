@@ -3,7 +3,7 @@ from __future__ import annotations
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtWidgets import QAbstractSpinBox
 
-from center_of_blob.range_slider import RangeSlider
+from cellcensus.range_slider import RangeSlider
 
 
 class BoxedRangeSlider(QtWidgets.QWidget):

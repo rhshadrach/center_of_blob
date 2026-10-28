@@ -7,9 +7,9 @@ import pytestqt.qtbot
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtWidgets import QApplication, QInputDialog, QMessageBox
 
-import center_of_blob.testing as tm
-from center_of_blob import popups
-from center_of_blob.main import MainWindow
+import cellcensus.testing as tm
+from cellcensus import popups
+from cellcensus.main import MainWindow
 from tests import data
 
 

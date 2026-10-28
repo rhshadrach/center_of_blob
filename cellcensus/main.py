@@ -23,10 +23,10 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from center_of_blob import popups, widgets
-from center_of_blob.centers import Center, Centers
-from center_of_blob.channels import N_CHANNELS, Channels
-from center_of_blob.region import Region
+from cellcensus import popups, widgets
+from cellcensus.centers import Center, Centers
+from cellcensus.channels import N_CHANNELS, Channels
+from cellcensus.region import Region
 
 C = TypeVar("C", bound="MainWindow")
 P = ParamSpec("P")
@@ -105,7 +105,7 @@ class MainWindow(QMainWindow):
 
         main.setLayout(layout)
 
-        self.setWindowTitle("Center of Blob - No File Loaded")
+        self.setWindowTitle("CellCensus - No File Loaded")
         self.label.label.installEventFilter(self)
 
         self.setGeometry(100, 100, 500, 400)
@@ -131,7 +131,7 @@ class MainWindow(QMainWindow):
 
         self.showMaximized()
 
-        img_path = os.environ.get("COB_IMAGE_PATH")
+        img_path = os.environ.get("CELLCENSUS_IMAGE_PATH")
         if img_path is not None:
             self.get_img_file(img_path)
 
@@ -189,7 +189,7 @@ class MainWindow(QMainWindow):
         else:
             self.has_img = True
             self.filename = str(path)
-            self.setWindowTitle(f"Center of Blob - {path.parts[-1]}")
+            self.setWindowTitle(f"CellCensus - {path.parts[-1]}")
             self.centers.clear()
             self.origin = None
             self.label.reset_image()
@@ -633,7 +633,7 @@ def except_hook(
     msg = f"Error: {cls} -- {exception}\nStacktrace\n"
     for line in stacktrace:
         msg += f"{line}\n"
-    filename = f"cob_error_{timestamp}.log"
+    filename = f"cellcensus_error_{timestamp}.log"
     with open(filename, "w") as f:
         f.write(msg)
     popups.error_msg(
@@ -642,9 +642,13 @@ def except_hook(
     )
 
 
-if __name__ == "__main__":
+def run() -> None:
     sys.excepthook = except_hook
     app = QApplication(sys.argv)
     main = MainWindow()
     main.show()
     sys.exit(app.exec_())
+
+
+if __name__ == "__main__":
+    run()
