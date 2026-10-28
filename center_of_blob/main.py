@@ -177,7 +177,7 @@ class MainWindow(QMainWindow):
         try:
             # TODO: load_image resets channel state.. bad design
             disable_channel_0 = self.channels.load_image(str(path))
-        except Exception as err:  # noqa: BLE001 - shown to the user in a popup
+        except Exception as err:
             popups.error_msg(
                 f"Failed to load file\n\n{path}\n\nError message:\n\n{err}"
             )
@@ -230,7 +230,7 @@ class MainWindow(QMainWindow):
             self.regions = []
             self.current_region = None
             self.make_regions(data)
-        except Exception as err:  # noqa: BLE001 - shown to the user in a popup
+        except Exception as err:
             popups.error_msg(
                 f"Failed to load file\n\n{path}\n\nError message:\n\n{err}"
             )
@@ -252,7 +252,7 @@ class MainWindow(QMainWindow):
         try:
             point = data[data["kind"] == "origin"].iloc[0]
             self.origin = point["x"], point["y"]
-        except Exception as err:  # noqa: BLE001 - shown to the user in a popup
+        except Exception as err:
             popups.error_msg(
                 f"Failed to find origin in centers file. Error message:\n\n{err}"
             )

@@ -50,6 +50,9 @@ dev = [
 [tool.pytest.ini_options]
 addopts = "-n auto"
 
+[tool.ruff.lint]
+ignore = ["BLE001"]
+
 [tool.ty.rules]
 # PyQt5-stubs names override parameters `a0`, `ev`, etc.; Qt only ever passes them
 # positionally, so the parameter-name mismatch is not a real error.

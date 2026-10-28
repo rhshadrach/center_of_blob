@@ -1,15 +1,58 @@
 #:schema https://www.schemastore.org/prek.json
 
+# Hooks that fix files do so locally (the `pre-commit` stage). CI runs the
+# `manual` stage, where these only report, so line numbers in other hooks'
+# output stay correct.
+[[repos]]
+repo = "builtin"
+
+[[repos.hooks]]
+id = "trailing-whitespace"
+stages = ["pre-commit"]
+
+[[repos.hooks]]
+id = "trailing-whitespace"
+alias = "trailing-whitespace-ci"
+args = ["--check"]
+stages = ["manual"]
+
+[[repos.hooks]]
+id = "end-of-file-fixer"
+stages = ["pre-commit"]
+
+[[repos.hooks]]
+id = "end-of-file-fixer"
+alias = "end-of-file-fixer-ci"
+args = ["--check"]
+stages = ["manual"]
+
+[[repos.hooks]]
+id = "fix-byte-order-marker"
+stages = ["pre-commit"]
+
+[[repos.hooks]]
+id = "fix-byte-order-marker"
+alias = "fix-byte-order-marker-ci"
+args = ["--check"]
+stages = ["manual"]
+
+[[repos.hooks]]
+id = "pretty-format-json"
+args = ["--autofix", "--no-sort-keys"]
+stages = ["pre-commit"]
+
+[[repos.hooks]]
+id = "pretty-format-json"
+alias = "pretty-format-json-ci"
+args = ["--no-sort-keys"]
+stages = ["manual"]
+
 [[repos]]
 repo = "builtin"
 hooks = [
-    { id = "trailing-whitespace" },
     { id = "check-case-conflict" },
     { id = "check-illegal-windows-names" },
-    { id = "end-of-file-fixer" },
-    { id = "fix-byte-order-marker" },
     { id = "check-json" },
-    { id = "pretty-format-json", args = ["--autofix", "--no-sort-keys"] },
     { id = "check-yaml" },
     { id = "check-toml" },
     { id = "check-merge-conflict" },
@@ -28,10 +71,27 @@ hooks = [
 [[repos]]
 repo = "https://github.com/astral-sh/ruff-pre-commit"
 rev = "v0.17.3"
-hooks = [
-    { id = "ruff-check", args = ["--fix"] },
-    { id = "ruff-format" },
-]
+
+# Fixes locally, only reports in CI; see the comment on the first `builtin` repo.
+[[repos.hooks]]
+id = "ruff-check"
+args = ["--fix"]
+stages = ["pre-commit"]
+
+[[repos.hooks]]
+id = "ruff-check"
+alias = "ruff-check-ci"
+stages = ["manual"]
+
+[[repos.hooks]]
+id = "ruff-format"
+stages = ["pre-commit"]
+
+[[repos.hooks]]
+id = "ruff-format"
+alias = "ruff-format-ci"
+args = ["--check", "--diff"]
+stages = ["manual"]
 
 [[repos]]
 repo = "https://github.com/codespell-project/codespell"
@@ -63,9 +123,16 @@ rules:
 [[repos]]
 repo = "https://github.com/srstevenson/nb-clean"
 rev = "v5.0.0"
-hooks = [
-    { id = "nb-clean" },
-]
+
+[[repos.hooks]]
+id = "nb-clean"
+stages = ["pre-commit"]
+
+[[repos.hooks]]
+id = "nb-clean"
+alias = "nb-clean-ci"
+entry = "nb-clean check"
+stages = ["manual"]
 
 [[repos]]
 repo = "https://github.com/DavidAnson/markdownlint-cli2"
