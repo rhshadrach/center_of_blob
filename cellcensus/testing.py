@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from center_of_blob.main import MainWindow
+    from cellcensus.main import MainWindow
 
 
 # TODO: Hardcode somehow instead of using main

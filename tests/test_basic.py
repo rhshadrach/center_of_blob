@@ -42,9 +42,9 @@ def test_window_title_filename(
 ) -> None:
     filename = "data/sample.tif"
     main = actions.setup_test(qtbot)
-    assert main.windowTitle() == "Center of Blob - No File Loaded"
+    assert main.windowTitle() == "CellCensus - No File Loaded"
 
     actions.load_image(monkeypatch, qtbot, main, filename)
     path = data.resolve_path(filename)
     assert main.filename == path
-    assert main.windowTitle() == "Center of Blob - sample.tif"
+    assert main.windowTitle() == "CellCensus - sample.tif"

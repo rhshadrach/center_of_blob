@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 import pytestqt.qtbot
 
-import center_of_blob as cob
+import cellcensus as cc
 from tests import actions
 
 
@@ -27,7 +27,7 @@ def test_write_csv(
     main = actions.setup_test(qtbot)
     actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
     main.origin = (50, 50)
-    main.centers = cob.Centers({(20, 30): cob.Center(20, 30, (255, 0, 0), "")})
+    main.centers = cc.Centers({(20, 30): cc.Center(20, 30, (255, 0, 0), "")})
     with tempfile.NamedTemporaryFile() as file:
         actions.save_csv(monkeypatch, qtbot, main, file.name)
         result = pd.read_csv(file.name)
@@ -52,8 +52,8 @@ def test_write_csv_regions(
     main = actions.setup_test(qtbot)
     actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
     main.origin = (50, 50)
-    main.centers = cob.Centers({(20, 30): cob.Center(20, 30, (255, 0, 0), "")})
-    main.regions = [cob.Region([(10, 10), (10, 40), (40, 40), (40, 10)], "test_name")]
+    main.centers = cc.Centers({(20, 30): cc.Center(20, 30, (255, 0, 0), "")})
+    main.regions = [cc.Region([(10, 10), (10, 40), (40, 40), (40, 10)], "test_name")]
     with tempfile.NamedTemporaryFile() as file:
         actions.save_csv(monkeypatch, qtbot, main, file.name)
         result = pd.read_csv(file.name)

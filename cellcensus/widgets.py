@@ -5,11 +5,11 @@ from typing import TYPE_CHECKING
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QCheckBox, QPushButton, QSlider
 
-from center_of_blob.boxed_range_slider import BoxedRangeSlider
-from center_of_blob.main_image import ScrollLabel
+from cellcensus.boxed_range_slider import BoxedRangeSlider
+from cellcensus.main_image import ScrollLabel
 
 if TYPE_CHECKING:
-    from center_of_blob.main import MainWindow
+    from cellcensus.main import MainWindow
 
 
 def create_img_path_button(main_window: MainWindow) -> QPushButton:

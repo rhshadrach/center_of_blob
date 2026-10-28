@@ -7,10 +7,10 @@ from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import QEvent, Qt
 from PyQt5.QtWidgets import QApplication, QLabel, QScrollArea, QScroller, QWidget
 
-from center_of_blob import analyze
+from cellcensus import analyze
 
 if TYPE_CHECKING:
-    from center_of_blob.main import MainWindow
+    from cellcensus.main import MainWindow
 
 
 class ScrollLabel(QScrollArea):

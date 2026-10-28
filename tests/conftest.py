@@ -1,7 +1,7 @@
 import pytest
 from PyQt5.QtWidgets import QMessageBox
 
-from center_of_blob import popups
+from cellcensus import popups
 
 
 @pytest.fixture

@@ -2,7 +2,7 @@ import pytest
 import pytestqt.qtbot
 from PyQt5.QtCore import Qt
 
-import center_of_blob as cob
+import cellcensus as cc
 from tests import actions
 
 
@@ -151,7 +151,7 @@ def test_debug_information(
 ) -> None:
     main = actions.setup_test(qtbot)
     actions.load_image(monkeypatch, qtbot, main, "data/sample.tif")
-    main.centers = cob.Centers({(20, 30): cob.Center(20, 30, (255, 0, 0), "a")})
+    main.centers = cc.Centers({(20, 30): cc.Center(20, 30, (255, 0, 0), "a")})
     actions.press_key(monkeypatch, qtbot, main, Qt.Key_Question)
     out = capsys.readouterr().out
     assert "Coordinates: (20, 30)" in out

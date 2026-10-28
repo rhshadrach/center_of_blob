@@ -2,8 +2,8 @@ import pytest
 import pytestqt.qtbot
 from PyQt5 import QtCore
 
-import center_of_blob.testing as tm
-from center_of_blob.centers import Center
+import cellcensus.testing as tm
+from cellcensus.centers import Center
 from tests import actions
 
 
