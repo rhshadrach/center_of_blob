@@ -208,15 +208,25 @@ class MainWindow(QMainWindow):
             self.colors = {0: False, 1: False, 2: False}
             self.label.update_image()
 
-    def make_regions(self, data: pd.DataFrame) -> None:
-        data = data[data["kind"] == "region"]
-        for name, df in data.groupby("region"):
-            points = zip(df["x"], df["y"])
-            region = Region()
-            for point in points:
-                region.add_point(point)
-            region.name = name
-            self.regions.append(region)
+    def read_regions(self, data: pd.DataFrame) -> list[Region]:
+        regions: list[Region] = []
+        region: Region | None = None
+        for row in data[data["kind"] == "region"].itertuples():
+            point = (row.x, row.y)
+            if region is not None and row.region != region.name:
+                regions.append(region)
+                region = None
+            if region is None:
+                region = Region(name=row.region)
+            region.add_point(point)
+            # Saved regions end by repeating their first point, which separates
+            # consecutive regions that have the same name.
+            if len(region) > 1 and point == region.points[0]:
+                regions.append(region)
+                region = None
+        if region is not None:
+            regions.append(region)
+        return regions
 
     @require_image
     def get_centers_file(self) -> None:
@@ -226,31 +236,25 @@ class MainWindow(QMainWindow):
         if not path:
             # The user cancelled the dialog.
             return
+        # Read everything before changing any state, so a refused file leaves the
+        # current work untouched.
         try:
-            data = pd.read_csv(path)
+            # Read region names as written, e.g. "" rather than NaN.
+            data = pd.read_csv(path, dtype={"region": str}, keep_default_na=False)
             values = data[data["kind"] == "center"]
             new_centers = Centers()
             for _, row in values.iterrows():
                 new_centers[row.x, row.y] = Center(
                     row.x, row.y, (row.red, row.green, row.blue), row.region
                 )
-            self.regions = []
-            self.current_region = None
-            self.make_regions(data)
+            new_regions = self.read_regions(data)
         except Exception as err:
             popups.error_msg(
                 f"Failed to load file\n\n{path}\n\nError message:\n\n{err}"
             )
             return
 
-        self.origin = None
-        self.centers = new_centers
-        self.colors = {0: False, 1: False, 2: False}
-        self.show_centers = [1, 2, 3]
-        self.center_colors = "normal"
-
-        if not self.centers.are_in_img(self.channels[1].shape):
-            self.centers.clear()
+        if not new_centers.are_in_img(self.channels[1].shape):
             popups.error_msg(
                 "Centers file has points outside of image bounds. Refusing file."
             )
@@ -258,14 +262,20 @@ class MainWindow(QMainWindow):
 
         try:
             point = data[data["kind"] == "origin"].iloc[0]
-            self.origin = point["x"], point["y"]
+            new_origin = point["x"], point["y"]
         except Exception as err:
             popups.error_msg(
                 f"Failed to find origin in centers file. Error message:\n\n{err}"
             )
-            self.centers.clear()
             return
 
+        self.origin = new_origin
+        self.centers = new_centers
+        self.regions = new_regions
+        self.current_region = None
+        self.colors = {0: False, 1: False, 2: False}
+        self.show_centers = [1, 2, 3]
+        self.center_colors = "normal"
         self.label.update_image()
 
     @require_image
@@ -568,7 +578,7 @@ class MainWindow(QMainWindow):
 
         x0, y0 = self.origin
         data = []
-        data.append(["origin", x0, y0, 0, 0, 0, 0])
+        data.append(["origin", x0, y0, 0, 0, 0, 0, ""])
         for (x, y), center in self.centers.items():
             distance = np.sqrt((x - x0) * (x - x0) + (y - y0) * (y - y0))
             data.append(["center", x, y, distance, *center.color, center.region])
